@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# Replace these with your actual Bitbucket Server URL and credentials
+BASE_URL="https://<bitbucket-server>/rest/api/1.0"
+USERNAME="your-username"
+PASSWORD="your-password" # Or use an API token
+OUTPUT_FILE="licensed_users.csv"
+GROUP_NAME="stash-users"
+
+# Initialize pagination variables
+limit=1000
+
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "jq could not be found. Please install jq to run this script."
+    exit 1
+fi
+
+# Create or clear the output file and write CSV header
+echo "Username,Last Authentication Date" > "$OUTPUT_FILE"
+
+# Function to fetch users in the stash-users group
+fetch_stash_users() {
+    start=0
+    has_more=true
+    > stash_users.txt
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/admin/groups/more-members?context=$GROUP_NAME&limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.name)"' >> stash_users.txt
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo true || echo false )
+        start=$((start + limit))
+    done
+}
+
+# Function to fetch projects
+fetch_projects() {
+    start=0
+    has_more=true
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects?limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.key)"'
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo true || echo false )
+        start=$((start + limit))
+    done
+}
+
+# Function to fetch repositories in a project
+fetch_repos() {
+    local project_key=$1
+    start=0
+    has_more=true
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos?limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.slug)"'
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo true || echo false )
+        start=$((start + limit))
+    done
+}
+
+# Function to fetch users with access to a repository
+fetch_repo_users() {
+    local project_key=$1
+    local repo_slug=$2
+    start=0
+    has_more=true
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos/$repo_slug/permissions/users?limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.user.name),\(.user.lastAuthenticationTimestamp)"'
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo true || echo false )
+        start=$((start + limit))
+    done
+}
+
+# Fetch users in the stash-users group
+fetch_stash_users
+
+# Fetch projects
+project_keys=$(fetch_projects)
+
+# Iterate through each project
+for project_key in $project_keys; do
+    # Fetch repositories in the project
+    repo_slugs=$(fetch_repos $project_key)
+    
+    # Iterate through each repository
+    for repo_slug in $repo_slugs; do
+        # Fetch users with access to the repository
+        repo_user_details=$(fetch_repo_users $project_key $repo_slug)
+        
+        # Process each user detail
+        echo "$repo_user_details" | while IFS=, read -r username timestamp; do
+            if grep -q "^$username$" stash_users.txt; then
+                # Convert the timestamp to a human-readable date format
+                readable_date=$(date -d @"$((timestamp / 1000))" +'%Y-%m-%d')
+                echo "$username,$readable_date" >> "$OUTPUT_FILE"
+            fi
+        done
+    done
+done
+
+# Cleanup temporary file
+rm stash_users.txt
+
+echo "Licensed users with access to repositories have been saved to $OUTPUT_FILE"
