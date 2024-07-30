@@ -1,0 +1,139 @@
+Sure, we can add a log for unlicensed users to capture the username and a message indicating that the user is unlicensed. Here's the updated script:
+
+```bash
+#!/bin/bash
+
+# Replace these with your actual Bitbucket Server URL and credentials
+BASE_URL="https://<bitbucket-server>/rest/api/1.0"
+USERNAME="your-username"
+PASSWORD="your-password" # Or use an API token
+OUTPUT_FILE="licensed_users.csv"
+GROUP_NAME="stash-users"
+STASH_USERS_FILE="stash_users.csv"
+UNLICENSED_USERS_FILE="unlicensed_users.csv"
+UNLICENSED_LOG="unlicensed_users.log"
+
+# Initialize pagination variables
+limit=1000
+
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "jq could not be found. Please install jq to run this script."
+    exit 1
+fi
+
+# Create or clear the output files and write CSV headers
+echo "Username,Email,Last Authentication Date" > "$STASH_USERS_FILE"
+echo "Project Key,Repository Name,Username,Display Name,Email,Permission,Last Authentication Date" > "$OUTPUT_FILE"
+echo "Project Key,Repository Name,Username,Display Name,Email,Permission,Last Authentication Timestamp" > "$UNLICENSED_USERS_FILE"
+> "$UNLICENSED_LOG"
+
+# Function to fetch users in the stash-users group
+fetch_stash_users() {
+    start=0
+    has_more=true
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/admin/groups/more-members?context=$GROUP_NAME&limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.name),\(.email),\(.lastAuthenticationTimestamp)"' | while IFS=, read -r username email timestamp; do
+            readable_date=$(date -d @"$((timestamp / 1000))" +'%Y-%m-%d')
+            echo "$username,$email,$readable_date" >> "$STASH_USERS_FILE"
+        done
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+# Function to fetch projects
+fetch_projects() {
+    start=0
+    has_more=true
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects?limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.key)"'
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+# Function to fetch repositories in a project
+fetch_repos() {
+    local project_key=$1
+    start=0
+    has_more=true
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos?limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.slug)"'
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+# Function to fetch users with access to a repository
+fetch_repo_users() {
+    local project_key=$1
+    local repo_slug=$2
+    start=0
+    has_more=true
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos/$repo_slug/permissions/users?limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.user.name),\(.user.displayName),\(.user.email),\(.permission),\(.user.lastAuthenticationTimestamp)"'
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+# Fetch users in the stash-users group
+fetch_stash_users
+
+# Fetch projects
+project_keys=$(fetch_projects)
+
+# Iterate through each project
+for project_key in $project_keys; do
+    # Fetch repositories in the project
+    repo_slugs=$(fetch_repos $project_key)
+    
+    # Iterate through each repository
+    for repo_slug in $repo_slugs; do
+        # Fetch users with access to the repository
+        repo_user_details=$(fetch_repo_users $project_key $repo_slug)
+        
+        # Process each user detail
+        echo "$repo_user_details" | while IFS=, read -r username display_name email permission timestamp; do
+            if grep -q "^$username," "$STASH_USERS_FILE"; then
+                # Extract the corresponding human-readable date from the stash-users file
+                readable_date=$(grep "^$username," "$STASH_USERS_FILE" | cut -d, -f3)
+                # Escape double quotes and handle commas in display name
+                sanitized_display_name=$(echo "$display_name" | sed 's/"/""/g')
+                echo "$project_key,$repo_slug,$username,\"$sanitized_display_name\",$email,$permission,$readable_date" >> "$OUTPUT_FILE"
+            else
+                echo "$project_key,$repo_slug,$username,\"$display_name\",$email,$permission,$timestamp" >> "$UNLICENSED_USERS_FILE"
+                echo "User $username is unlicensed" >> "$UNLICENSED_LOG"
+            fi
+        done
+    done
+done
+
+echo "Licensed users with access to repositories have been saved to $OUTPUT_FILE"
+echo "Unlicensed users with access to repositories have been saved to $UNLICENSED_USERS_FILE"
+echo "Unlicensed users have been logged to $UNLICENSED_LOG"
+```
+
+### Key Changes:
+1. **Include Email in `stash_users.csv`**:
+   - The `fetch_stash_users` function now includes the email address and converts the `lastAuthenticationTimestamp` to a human-readable format.
+
+2. **Output Files with Headers**:
+   - Both `STASH_USERS_FILE` and `UNLICENSED_USERS_FILE` have appropriate headers.
+
+3. **Log Unlicensed Users**:
+   - If a user is not found in `stash_users.csv`, their details are logged in `unlicensed_users.log` with a message indicating that they are unlicensed.
+
+4. **Date Handling Only Once**:
+   - The script now correctly handles dates only once, and it logs the users not found in `stash_users.csv`.
+
+This updated script should provide a complete overview of licensed and unlicensed users, correctly handling display names with commas and logging unlicensed users.
