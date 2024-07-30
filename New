@@ -1,0 +1,7 @@
+project_file="${project_key}_licensed_users.csv"
+echo "Project Key,Repository Name,Username,Display Name,Email,Permission,Last Authentication Date" > "$project_file"
+
+echo "$project_key,$repo_slug,$username,\"$sanitized_display_name\",$email,$permission,$readable_date" >> "$project_file"
+
+echo "$project_key,$repo_slug,$username,\"$display_name\",$email,$permission,$timestamp" >> unlicensed_users.csv
+echo "User $username is unlicensed" >> unlicensed_users.log
