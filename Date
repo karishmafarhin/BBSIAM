@@ -1,6 +1,3 @@
-Sure, we can add a log for unlicensed users to capture the username and a message indicating that the user is unlicensed. Here's the updated script:
-
-```bash
 #!/bin/bash
 
 # Replace these with your actual Bitbucket Server URL and credentials
@@ -121,19 +118,3 @@ done
 echo "Licensed users with access to repositories have been saved to $OUTPUT_FILE"
 echo "Unlicensed users with access to repositories have been saved to $UNLICENSED_USERS_FILE"
 echo "Unlicensed users have been logged to $UNLICENSED_LOG"
-```
-
-### Key Changes:
-1. **Include Email in `stash_users.csv`**:
-   - The `fetch_stash_users` function now includes the email address and converts the `lastAuthenticationTimestamp` to a human-readable format.
-
-2. **Output Files with Headers**:
-   - Both `STASH_USERS_FILE` and `UNLICENSED_USERS_FILE` have appropriate headers.
-
-3. **Log Unlicensed Users**:
-   - If a user is not found in `stash_users.csv`, their details are logged in `unlicensed_users.log` with a message indicating that they are unlicensed.
-
-4. **Date Handling Only Once**:
-   - The script now correctly handles dates only once, and it logs the users not found in `stash_users.csv`.
-
-This updated script should provide a complete overview of licensed and unlicensed users, correctly handling display names with commas and logging unlicensed users.
