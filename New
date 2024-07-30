@@ -1,7 +1,140 @@
-project_file="${project_key}_licensed_users.csv"
-echo "Project Key,Repository Name,Username,Display Name,Email,Permission,Last Authentication Date" > "$project_file"
+#!/bin/bash
 
-echo "$project_key,$repo_slug,$username,\"$sanitized_display_name\",$email,$permission,$readable_date" >> "$project_file"
+# Replace these with your actual Bitbucket Server URL and credentials
+BASE_URL="https://<bitbucket-server>/rest/api/1.0"
+USERNAME="your-username"
+PASSWORD="your-password" # Or use an API token
+GROUP_NAME="stash-users"
+PROJECT_KEYS_FILE="project_keys.txt"
 
-echo "$project_key,$repo_slug,$username,\"$display_name\",$email,$permission,$timestamp" >> unlicensed_users.csv
-echo "User $username is unlicensed" >> unlicensed_users.log
+# Read batch limit from Jenkins parameter; default to 10 if not provided
+batch_limit="${BATCH_LIMIT:-10}"
+
+# Initialize pagination variables
+limit=1000
+
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "jq could not be found. Please install jq to run this script."
+    exit 1
+fi
+
+# Create or clear the output files and write CSV headers
+echo "Username,Email,Last Authentication Date" > output/stash_users.csv
+echo "Unlicensed Users Log" > output/unlicensed_users.log
+echo "Username,Display Name,Email,Permission,Last Authentication Date" > output/unlicensed_users.csv
+
+# Function to fetch users in the stash-users group
+fetch_stash_users() {
+    start=0
+    has_more=true
+    > output/stash_users.csv
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/admin/groups/more-members?context=$GROUP_NAME&limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.name),\(.email),\(.lastAuthenticationTimestamp)"' | while IFS=, read -r username email timestamp; do
+            readable_date=$(date -d @"$((timestamp / 1000))" +'%Y-%m-%d')
+            echo "$username,$email,$readable_date" >> output/stash_users.csv
+        done
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+# Function to fetch projects
+fetch_projects() {
+    start=0
+    has_more=true
+    > "$PROJECT_KEYS_FILE"
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects?limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.key)"' >> "$PROJECT_KEYS_FILE"
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+# Function to fetch repositories in a project
+fetch_repos() {
+    local project_key=$1
+    start=0
+    has_more=true
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos?limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.slug)"'
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+# Function to fetch users with access to a repository
+fetch_repo_users() {
+    local project_key=$1
+    local repo_slug=$2
+    start=0
+    has_more=true
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos/$repo_slug/permissions/users?limit=$limit&start=$start")
+        echo "$response" | jq -r '.values[] | "\(.user.name),\(.user.displayName),\(.user.email),\(.permission // "N/A"),\(.user.lastAuthenticationTimestamp)"'
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+# Fetch users in the stash-users group
+fetch_stash_users
+
+# Fetch project keys
+fetch_projects
+
+# Read project keys and process each project in batches
+total_projects=$(wc -l < "$PROJECT_KEYS_FILE")
+start=0
+
+while [ $start -lt $total_projects ]; do
+    end=$((start + batch_limit))
+    batch_projects=$(sed -n "${start},${end}p" "$PROJECT_KEYS_FILE")
+    
+    # Iterate through each project in the batch
+    for project_key in $batch_projects; do
+        echo "Processing project: $project_key"
+        
+        # Create a directory for the project
+        mkdir -p "output/$project_key"
+        
+        # Initialize the CSV file for the current project
+        project_file="output/$project_key/${project_key}_licensed_users.csv"
+        echo "Project Key,Repository Name,Username,Display Name,Email,Permission,Last Authentication Date" > "$project_file"
+        
+        # Fetch repositories in the project
+        repo_slugs=$(fetch_repos $project_key)
+        
+        # Iterate through each repository
+        for repo_slug in $repo_slugs; do
+            # Fetch users with access to the repository
+            repo_user_details=$(fetch_repo_users $project_key $repo_slug)
+            
+            # Process each user detail
+            echo "$repo_user_details" | while IFS=, read -r username display_name email permission timestamp; do
+                if grep -q "^$username," output/stash_users.csv; then
+                    # Extract the corresponding human-readable date from the stash-users file
+                    readable_date=$(grep "^$username," output/stash_users.csv | cut -d, -f3)
+                    # Escape double quotes and handle commas in display name
+                    sanitized_display_name=$(echo "$display_name" | sed 's/"/""/g' | sed 's/,/ /g')
+                    echo "$project_key,$repo_slug,$username,\"$sanitized_display_name\",$email,$permission,$readable_date" >> "$project_file"
+                else
+                    echo "$project_key,$repo_slug,$username,\"$display_name\",$email,$permission,$timestamp" >> output/unlicensed_users.csv
+                    echo "User $username is unlicensed" >> output/unlicensed_users.log
+                fi
+            done
+        done
+    done
+    
+    start=$end
+done
+
+echo "Licensed users with access to repositories have been saved to project-specific files in the output directory."
+echo "Unlicensed users have been logged to output/unlicensed_users.log and output/unlicensed_users.csv"
