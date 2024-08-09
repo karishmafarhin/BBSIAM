@@ -1,0 +1,106 @@
+# Function to fetch projects from a text file
+fetch_projects_from_file() {
+    local project_file=$1
+    
+    # Check if the file exists
+    if [[ ! -f "$project_file" ]]; then
+        echo "Project file not found: $project_file"
+        exit 1
+    fi
+
+    # Read project keys from the file
+    while IFS= read -r project_key || [ -n "$project_key" ]; do
+        echo "Processing project: $project_key"
+        fetch_repos "$project_key"
+    done < "$project_file"
+}
+
+fetch_repos() {
+    local project_key=$1
+    local start=0
+    local has_more=true
+
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos?limit=$limit&start=$start")
+        
+        # Check if there are repos in the response
+        if [[ $(echo "$response" | jq '.size') -eq 0 ]]; then
+            echo "No repositories found for project: $project_key"
+            break
+        fi
+
+        echo "$response" | jq -r '.values[].slug' | while read repo_slug; do
+            fetch_repo_groups "$project_key" "$repo_slug"
+        done
+
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+fetch_repo_groups() {
+    local project_key=$1
+    local repo_slug=$2
+    local start=0
+    local has_more=true
+
+    # File to save groups information
+    local groups_file="groups.csv"
+    echo "Group Name,Group Description,Permission" > "$groups_file"
+
+    # File to save group users information (initialize once)
+    local users_file="group_users.csv"
+    echo "Group Name,User Name,User Display Name,User Email" > "$users_file"
+
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos/$repo_slug/permissions/groups?limit=$limit&start=$start")
+
+        # Check if there are groups in the response
+        if [[ $(echo "$response" | jq '.size') -eq 0 ]]; then
+            echo "No groups found for repo: $repo_slug in project: $project_key"
+            break  # Exit the loop and move to the next repo or project
+        fi
+
+        echo "$response" | jq -r '.values[] | "\(.group.name),\(.group.description),\(.permission)"' >> "$groups_file"
+        
+        # Fetch users for each group and save to a file
+        echo "$response" | jq -r '.values[].group.name' | while read group_name; do
+            fetch_users_from_group "$project_key" "$repo_slug" "$group_name" "$users_file"
+        done
+
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+fetch_users_from_group() {
+    local project_key=$1
+    local repo_slug=$2
+    local group_name=$3
+    local users_file=$4
+    local start=0
+    local has_more=true
+
+    while $has_more; do
+        response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos/$repo_slug/groups/$group_name/users?limit=$limit&start=$start")
+
+        # Check if there are users in the group response
+        if [[ $(echo "$response" | jq '.size') -eq 0 ]]; then
+            echo "No users found in group: $group_name"
+            break  # Exit the loop and move to the next group
+        fi
+
+        echo "$response" | jq -r --arg group_name "$group_name" '.values[] | "\($group_name),\(.user.name),\(.user.displayName),\(.user.email)"' >> "$users_file"
+        
+        is_last_page=$(echo "$response" | jq '.isLastPage')
+        has_more=$( [ "$is_last_page" == "false" ] && echo false || echo true )
+        start=$((start + limit))
+    done
+}
+
+# Example usage
+# Ensure that the file "project_keys.txt" contains the list of project keys, one per line.
+project_file="project_keys.txt"
+fetch_projects_from_file "$project_file"
