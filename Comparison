@@ -1,0 +1,7 @@
+# Compare group users with stash users and write to final output
+while IFS=, read -r project_key repo_slug group_name permission username timestamp; do
+    if grep -q "^$username$" stash_users.txt; then
+        readable_date=$(date -d @"$((timestamp / 1000))" +'%Y-%m-%d')
+        echo "$username,$readable_date,$project_key,$repo_slug,$group_name,$permission" >> "$FINAL_OUTPUT_FILE"
+    fi
+done < "$GROUP_USERS_FILE"
