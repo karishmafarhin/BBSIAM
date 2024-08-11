@@ -1,0 +1,35 @@
+# Define file paths
+project_users_file="BB_PROD_${project_key}_Project_Users.csv"
+project_group_users_file="BB_PROD_${project_key}_Project_Groups_Users.csv"
+repo_users_file="BB_PROD_${project_key}_Repo_Users.csv"
+repo_group_users_file="BB_PROD_${project_key}_Repo_Group_Users.csv"
+
+# Initialize an empty variable for storing files to be sent
+files_to_send=""
+
+# Check each file and append it to the files_to_send variable if it exists and is non-empty
+if [ -s "$project_users_file" ]; then
+    files_to_send="$files_to_send -A $project_users_file"
+fi
+
+if [ -s "$project_group_users_file" ]; then
+    files_to_send="$files_to_send -A $project_group_users_file"
+fi
+
+if [ -s "$repo_users_file" ]; then
+    files_to_send="$files_to_send -A $repo_users_file"
+fi
+
+if [ -s "$repo_group_users_file" ]; then
+    files_to_send="$files_to_send -A $repo_group_users_file"
+fi
+
+# If files_to_send is not empty, send the email
+if [ ! -z "$files_to_send" ]; then
+    echo "Sending the following files: $files_to_send"
+    mail -s "Project and Repo Users Report" admin@example.com $files_to_send <<< "Please find the attached project and repository users reports."
+else
+    echo "No files found to send."
+    # Optionally notify or log an error
+    # Example: echo "Error: No files found" | mail -s "Error Report" admin@example.com
+fi
