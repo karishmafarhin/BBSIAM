@@ -1,0 +1,20 @@
+files_to_send=""
+
+header_count=1  # Number of header lines expected
+
+check_file() {
+    local file="$1"
+    if [ -e "$file" ] && [ -s "$file" ] && [ "$(wc -l < "$file")" -gt "$header_count" ]; then
+        files_to_send+="$file "
+    fi
+}
+
+check_file "BB_PROD_${project_key}_Project_Users.csv"
+check_file "BB_PROD_${project_key}_Project_Groups_Users.csv"
+check_file "BB_PROD_${project_key}_Repo_Group_Users.csv"
+check_file "BB_PROD_${project_key}_Repo_Users.csv"
+
+# Trim trailing space
+files_to_send=$(echo "$files_to_send" | sed 's/ *$//')
+
+echo "$files_to_send"
