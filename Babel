@@ -1,0 +1,2 @@
+Use require instead of import: If possible, modify the JavaScript code to use CommonJS syntax, which is compatible with Node.js by default.Change:export { contains, merge } from './static.js';to:const { contains, merge } = require('./static.js');
+module.exports = { contains, merge };
