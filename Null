@@ -1,0 +1,10 @@
+awk -F, '{
+    null_found = 0;
+    for(i=1; i<=NF; i++) {
+        if($i == "") {
+            null_found = 1;
+            break;
+        }
+    }
+    if(!null_found) print $0;
+}' admins.txt > admins_cleaned.txt
