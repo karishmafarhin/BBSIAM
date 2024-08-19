@@ -13,3 +13,27 @@ if (jobsUsingTestNG) {
 } else {
     println "No jobs found using TestNG."
 }
+
+
+
+// This script searches all Jenkins jobs for references to TestNG
+def jobsUsingTestNG = []
+
+// Iterate through all jobs in Jenkins
+Jenkins.instance.allItems.each { job ->
+    // Get the job's configuration XML as a string
+    def configXml = job.getConfigFile().asString()
+    
+    // Check if the configuration contains 'testng'
+    if (configXml.contains("testng")) {
+        jobsUsingTestNG.add(job.fullName)
+    }
+}
+
+// Print the results
+if (jobsUsingTestNG) {
+    println "Jobs using TestNG:"
+    jobsUsingTestNG.each { println it }
+} else {
+    println "No jobs found using TestNG."
+}
