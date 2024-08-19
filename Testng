@@ -1,0 +1,15 @@
+// This script searches all Jenkins jobs for references to TestNG
+def jobsUsingTestNG = []
+
+Jenkins.instance.allItems(Job.class).each { job ->
+    if (job.getConfigFile().asString().contains("testng")) {
+        jobsUsingTestNG.add(job.fullName)
+    }
+}
+
+if (jobsUsingTestNG) {
+    println "Jobs using TestNG:"
+    jobsUsingTestNG.each { println it }
+} else {
+    println "No jobs found using TestNG."
+}
