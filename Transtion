@@ -1,0 +1,43 @@
+# Define the project key and groups
+PROJECT_KEY="your_project_key"
+
+# Fetch all group users and save them in a CSV file
+GROUP_USERS_CSV="${PROJECT_KEY}_group_users.csv"
+curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$PROJECT_KEY/permissions/groups?limit=1000" | jq -r '.values[] | [.projectKey, .group.name, .permission, .user.name] | @csv' > "$GROUP_USERS_CSV"
+
+# Function to map permission levels to numerical values for comparison
+map_permission_to_level() {
+    case "$1" in
+        "PROJECT_READ") echo 1 ;;
+        "PROJECT_WRITE") echo 2 ;;
+        "PROJECT_ADMIN") echo 3 ;;
+        *) echo 0 ;;  # Undefined permission
+    esac
+}
+
+# Iterate through the CSV file
+while IFS=, read -r project_key group_name group_permission username; do
+    # Remove quotes from CSV fields
+    group_permission=$(echo "$group_permission" | tr -d '"')
+    username=$(echo "$username" | tr -d '"')
+
+    # Fetch current user permission from the project user section
+    current_permission=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/permissions/users?filter=$username" | jq -r ".values[] | select(.user.name == \"$username\") | .permission")
+
+    # Map permissions to numerical levels
+    group_permission_level=$(map_permission_to_level "$group_permission")
+    current_permission_level=$(map_permission_to_level "$current_permission")
+
+    # Compare permissions
+    if [ -z "$current_permission" ]; then
+        # If the user doesn't exist in the user section, add them
+        echo "User $username does not exist in the user section. Adding with $group_permission permission..."
+        curl -s -u "$USERNAME:$PASSWORD" -X PUT -H "Content-Type: application/json" -d "{\"name\":\"$username\"}" "$BASE_URL/projects/$project_key/permissions/users?permission=$group_permission"
+    elif [ "$current_permission_level" -lt "$group_permission_level" ]; then
+        # If the current permission is lower, update it
+        echo "User $username has $current_permission. Updating to $group_permission..."
+        curl -s -u "$USERNAME:$PASSWORD" -X PUT -H "Content-Type: application/json" -d "{\"name\":\"$username\"}" "$BASE_URL/projects/$project_key/permissions/users?permission=$group_permission"
+    else
+        echo "User $username already has $current_permission, which is higher or equal. No action needed."
+    fi
+done < "$GROUP_USERS_CSV"
