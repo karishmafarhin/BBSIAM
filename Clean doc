@@ -1,0 +1,101 @@
+Here's a step-by-step outline you can include in your documentation, tailored to your input:
+
+---
+
+### **Bitbucket Inactive Repository Cleanup Process**
+
+#### **1. Identify Inactive Repositories**
+- **Objective:** Identify repositories with no commits in the last two years.
+- **Method:** Use Bitbucket's API or a custom script to filter out these repositories.
+- **Output:** Generate an Excel file containing:
+  - **Project Key**
+  - **Project Name**
+  - **Repository Name**
+  - **Admin Details**
+  - **Action to be Taken** (Dropdown with "Retain" or "Delete" options)
+
+#### **2. Collect Responses from Project Admins**
+- **Objective:** Obtain decisions from project admins on whether to retain or delete each repository.
+- **Process:**
+  - Distribute the Excel file to the project admins.
+  - Admins fill in the "Action to be Taken" column by selecting either "Retain" or "Delete."
+
+#### **3. Consolidate Admin Responses**
+- **Objective:** Filter the Excel file to focus on repositories marked for deletion.
+- **Process:**
+  - Filter the Excel file to include only rows where "Delete" is selected.
+- **Output:** Save the filtered data into a new CSV file with two columns:
+  - **Project Key**
+  - **Repository Name**
+
+#### **4. Prepare the CSV File for Deletion Script**
+- **Objective:** Create a CSV file (`repos_to_delete.csv`) to serve as input for the deletion script.
+- **Columns:** 
+  - **Project Key**
+  - **Repository Name**
+
+#### **5. Write a Script to Delete the Repositories**
+- **Objective:** Automate the deletion of inactive repositories based on the prepared CSV file.
+- **Script Overview:**
+  - Read from the CSV file.
+  - For each repository, send a DELETE request to the Bitbucket API.
+- **Script Example:**
+  ```bash
+  #!/bin/bash
+
+  USERNAME="your_username"
+  PASSWORD="your_password"
+  BASE_URL="https://bitbucket.example.com/rest/api/1.0"
+
+  # Path to your CSV file
+  CSV_FILE="repos_to_delete.csv"
+
+  # Read the CSV file line by line
+  while IFS=, read -r project_key repo_slug; do
+      echo "Deleting repository: $repo_slug from project: $project_key"
+
+      # Perform the DELETE request to remove the repository
+      response=$(curl -s -o /dev/null -w "%{http_code}" -u "$USERNAME:$PASSWORD" -X DELETE "$BASE_URL/projects/$project_key/repos/$repo_slug")
+
+      if [ "$response" -eq 204 ]; then
+          echo "Successfully deleted $repo_slug from $project_key."
+      else
+          echo "Failed to delete $repo_slug from $project_key. HTTP response code: $response"
+      fi
+
+  done < "$CSV_FILE"
+  ```
+
+#### **6. Create and Configure a Jenkins/CloudBees CI Job**
+- **Objective:** Automate the execution of the deletion script via Jenkins/CloudBees CI.
+- **Steps:**
+  - **Build Trigger:** Set up a manual or scheduled trigger.
+  - **Build Steps:**
+    1. Check out the repository containing the deletion script.
+    2. Execute the script to delete the repositories listed in `repos_to_delete.csv`.
+
+#### **7. Validate the Deletion Process**
+- **Objective:** Test the deletion script on a set of test repositories to ensure it works correctly.
+- **Steps:**
+  - Create test repositories in a dedicated project.
+  - Update the `repos_to_delete.csv` file to include these test repositories.
+  - Run the Jenkins/CloudBees CI job to execute the script.
+  - Verify that only the intended test repositories are deleted.
+
+#### **8. Execute the Cleanup**
+- **Objective:** Perform the final cleanup of inactive repositories based on admin responses.
+- **Steps:**
+  - Use the Jenkins/CloudBees CI job to execute the deletion script on the actual repositories.
+  - Monitor the job’s execution and confirm successful deletion of the specified repositories.
+
+#### **9. Document the Process**
+- **Objective:** Provide a clear and comprehensive guide for the repository cleanup process.
+- **Content to Include:**
+  - Overview of the script and how it functions.
+  - Instructions on how to update the CSV file.
+  - Guidelines on executing the Jenkins/CloudBees CI job.
+  - Troubleshooting tips for potential issues.
+
+---
+
+This step-by-step guide ensures that all relevant actions are documented clearly for future reference.
