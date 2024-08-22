@@ -14,3 +14,24 @@ The current version of uDeploy in the production environment has already reached
 3. **Post-Upgrade Validation:** Perform a thorough validation to confirm all production systems are functioning as expected. Address any issues immediately.
 
 4. **Documentation and Monitoring:** Update all relevant documentation and continue monitoring the system for any unexpected behavior in the days following the upgrade.
+
+
+**Acceptance Criteria (Updated):**
+
+1. **Successful Upgrade:** The uDeploy version is upgraded in the production environment without critical errors.
+
+2. **Minimal Downtime:** The upgrade is completed within the scheduled maintenance window.
+
+3. **Post-Upgrade Validation:** All deployment processes function correctly, with no regressions. Self-service deployments via CloudBees CD are successfully performed.
+
+4. **ACM Team Validation:** The ACM team validates that WebSphere functionality is operational.
+
+5. **FRA Monitoring:** Daily updates on the FRA size are obtained from the DB team. The restore point is monitored, ensuring it does not reach 100% FRA, which could impact uDeploy.
+
+6. **Restore Points Management:** Restore points are dropped after one week as planned.
+
+7. **No Critical Issues:** No critical issues are identified within 48 hours post-upgrade.
+
+8. **Documentation Updated:** Relevant documentation is updated to reflect the new uDeploy version.
+
+9. **Stakeholder Sign-off:** Stakeholders, including the ACM team, confirm that systems are operating as expected.
