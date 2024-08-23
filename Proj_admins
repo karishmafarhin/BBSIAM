@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Define the output CSV file
+output_file="project_admin_details.csv"
+
+# Write the CSV header
+echo "Project Key,Project Name,Admin Username,Admin Email" > "$output_file"
+
+# Loop through each project key from the input file
+while IFS= read -r project_key; do
+    echo "Fetching details for project: $project_key"
+
+    # Fetch project details including name and admin users
+    project_response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key")
+
+    # Extract project name
+    project_name=$(echo "$project_response" | jq -r '.name')
+
+    # Fetch the list of admin users for the project
+    admins_response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/permissions/users?filter=REPO_ADMIN")
+
+    # Loop through each admin user and extract details
+    echo "$admins_response" | jq -r --arg project_key "$project_key" --arg project_name "$project_name" \
+    '.values[] | select(.permission == "PROJECT_ADMIN") | "\($project_key),\($project_name),\(.user.name),\(.user.emailAddress)"' >> "$output_file"
+
+done < "projectkey.txt"
+
+echo "Project details have been written to $output_file"
