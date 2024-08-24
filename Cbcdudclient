@@ -1,0 +1,15 @@
+echo "${/myPipelineRuntime/uDeployDetails}" > DeployDetails.json
+
+Output=$(/appbin/Softwares/udclient/udclient -username ${/myPipeline/propertySheet/ReleaseManagement/uDeploy_Username} \
+-password ${/myPipeline/propertySheet/ReleaseManagement/uDeploy_Password} \
+-weburl ${/myPipeline/propertySheet/ReleaseManagement/uDeploy_Prod_WebUrl} \
+requestApplicationProcess DeployDetails.json)
+
+# Extract Application ID cleanly
+Application_ID1=$(echo "$Output" | grep -oP '(?<="id":")[^"]+')
+Application_ID=$(echo "$Application_ID1" | tr -d '{},')
+
+echo "Application ID: $Application_ID"
+
+# Set the property
+ectool setProperty "/myPipelineRuntime/${/myStage}_uDeployRequestID" --value "$Application_ID"
