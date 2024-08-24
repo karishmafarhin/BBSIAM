@@ -98,3 +98,27 @@ echo "Application ID: $Application_ID"
 
 # Set the property in CloudBees CD
 ectool setProperty "/myPipelineRuntime/${/myStage}_uDeployRequestID" --value "$Application_ID"
+
+
+
+
+
+Sure, here’s a concise summary:
+
+---
+
+**Subject:** Issues with `udclient` Post-uDeploy Upgrade
+
+**Message:**
+
+We have successfully upgraded the uDeploy application and validated its functionalities. However, we are encountering issues with `udclient` in CloudBees CD, where our current procedure or command syntax is not supported in the newly upgraded version of `udclient`.
+
+We are actively troubleshooting this issue and have opened support cases with both the CloudBees CD vendor and IBM Vendor to assist in resolving the `udclient` issue.
+
+Please find the vendor ticket details attached for your reference.
+
+Thank you.
+
+---
+
+Let me know if you need any modifications!
