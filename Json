@@ -1,0 +1,32 @@
+Here’s the corrected message with your updated details:
+
+---
+
+**Subject: Important: Update Required in Release DSLs and Main Template due to JSON Parsing Change**
+
+Hi Team,
+
+**Issue Overview:**
+After the recent upgrade of the uDeploy client, our existing script that handles deployment status started encountering issues. The root cause was a change in how the `udclient` command returns output. The output format is now strictly JSON, and our script was using simple text extraction commands like `cut` and `tr`, which no longer work reliably with the updated JSON structure.
+
+**Solution Implemented:**
+We fixed this by replacing the old parsing logic with `jq`, a dedicated tool for handling JSON. This change ensures that the correct values are extracted even if the JSON format changes slightly in the future.
+
+**Impact on Planned Releases:**
+While the deployments themselves will not fail, the status in CloudBees CD will be marked as "Failed," causing the deployment result to not be updated correctly in the associated ServiceNow tickets. This can lead to inaccurate tracking and reporting of deployment statuses.
+
+**Action Required:**
+1. **Immediate Updates:** Please ensure this change is applied to all relevant release DSLs.
+2. **Main Template Update:** We will also be updating the main template used for these deployments to include the new logic, which will prevent this issue from recurring in future releases.
+
+**Next Steps:**
+Let’s coordinate to apply these changes as soon as possible to avoid disruptions in status updates and ticket integrations.
+
+Please reach out if you have any questions or need help applying the updates.
+
+Best regards,  
+[Your Name]
+
+---
+
+This updated message accurately reflects the behavior you described and the importance of making the necessary changes.
