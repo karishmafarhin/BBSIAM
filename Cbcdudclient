@@ -68,3 +68,33 @@ echo "Application ID: $Application_ID"
 
 # Set the property in CloudBees CD
 ectool setProperty "/myPipelineRuntime/${/myStage}_uDeployRequestID" --value "$Application_ID"
+
+
+
+
+# Assigning the value of uDeployDetails directly, assuming it's passed as a variable or retrieved by ectool
+uDeployDetails="/myPipelineRuntime/uDeployDetails"
+
+# If you need to retrieve it using ectool:
+uDeployDetails=$(ectool getProperty "/myPipelineRuntime/uDeployDetails")
+
+# Create the DeployDetails.json file
+echo "$uDeployDetails" > DeployDetails.json
+
+# Execute the udclient command and capture the output
+Output=$(/appbin/Softwares/udclient/udclient -username "/myPipeline/propertySheet/ReleaseManagement/uDeploy_Username" \
+-password "/myPipeline/propertySheet/ReleaseManagement/uDeploy_Password" \
+-weburl "/myPipeline/propertySheet/ReleaseManagement/uDeploy_Prod_WebUrl" \
+requestApplicationProcess DeployDetails.json)
+
+# Print the full output for debugging
+echo "Full Output:"
+echo "$Output"
+
+# Extract the Application ID assuming it appears as "id": "value"
+Application_ID=$(echo "$Output" | grep -o '"id":[^,]*' | cut -d':' -f2 | tr -d '", ')
+
+echo "Application ID: $Application_ID"
+
+# Set the property in CloudBees CD
+ectool setProperty "/myPipelineRuntime/${/myStage}_uDeployRequestID" --value "$Application_ID"
