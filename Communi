@@ -1,0 +1,28 @@
+Here’s the final version with the upgrade details included:
+
+---
+
+**Subject: uDeploy Production Upgrade Completed (7.0.5 to 7.3.2) - Action Required for JMS Agents**
+
+Dear Application Teams,
+
+We are pleased to inform you that the uDeploy version upgrade in production from **7.0.5 to 7.3.2** has been successfully completed, and all functionalities have been validated. Everything is functioning as expected.
+
+However, if you encounter any issues related to the upgrade during your deployments, please feel free to reach out to the DevOps Support team for assistance.
+
+**Action Required:**
+
+Please find attached the list of JMS uDeploy agents that are currently offline or have been deleted due to the deprecation of JMS agents in this version. We kindly request you to verify if any of your agents are included in this list.
+
+If your agent is listed, please follow the instructions on the provided Confluence page to reinstall the agent using the Web Protocol. Once done, kindly raise an RITM (Request Item) to the DevOps Support team for the necessary configurations.
+
+Thank you for your attention to this matter. We appreciate your cooperation in ensuring a smooth upgrade.
+
+Best Regards,  
+[Your Name]  
+[Your Position]  
+DevOps Support Team
+
+---
+
+This version includes the upgrade specifics. Let me know if it’s good to go or if you need any more adjustments!
