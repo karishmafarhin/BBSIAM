@@ -26,3 +26,5 @@ DevOps Support Team
 ---
 
 This version includes the upgrade specifics. Let me know if it’s good to go or if you need any more adjustments!
+
+Please find attached the list of JMS uDeploy agents that were marked as upgrade recommended prior to the upgrade. We kindly request you to prioritize installing these agents 
