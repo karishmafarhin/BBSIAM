@@ -12,3 +12,20 @@ Jenkins.instance.getAllItems(Job).each { job ->
         }
     }
 }
+
+
+// Define the service account token pattern to search for
+def serviceAccountPattern = 'svc-app-new'
+
+Jenkins.instance.getAllItems(org.jenkinsci.plugins.workflow.job.WorkflowJob).each { job ->
+    try {
+        // Fetch the pipeline's configuration XML
+        def configXml = job.getConfigFile().asString()
+        // Check if the configuration XML contains the service account name
+        if (configXml.contains(serviceAccountPattern)) {
+            println "Pipeline using the service account: ${job.fullName}"
+        }
+    } catch (Exception e) {
+        println "Error checking pipeline: ${job.fullName} - ${e.message}"
+    }
+}
