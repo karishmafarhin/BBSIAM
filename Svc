@@ -29,3 +29,24 @@ Jenkins.instance.getAllItems(org.jenkinsci.plugins.workflow.job.WorkflowJob).eac
         println "Error checking pipeline: ${job.fullName} - ${e.message}"
     }
 }
+// Define the service account token pattern to search for
+def serviceAccountPattern = 'svc-app-new'
+
+// Loop through all Jenkins jobs
+Jenkins.instance.getAllItems(org.jenkinsci.plugins.workflow.job.WorkflowJob).each { job ->
+    try {
+        // Get the pipeline configuration XML as a string
+        def configXml = job.getConfigFile().asString()
+        
+        // Search for the service account pattern in relevant credential bindings
+        def credentialPattern = ~/((credentialsId|usernamePassword|secret)(.|\s)*$serviceAccountPattern)/
+        
+        if (credentialPattern.matcher(configXml).find()) {
+            // Print only the full name of the job (e.g., folder/pipelineName)
+            println job.fullName
+        }
+    } catch (Exception e) {
+        // Catch and print any errors encountered
+        println "Error processing job: ${job.fullName} - ${e.message}"
+    }
+}
