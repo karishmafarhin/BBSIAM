@@ -1,0 +1,41 @@
+Here's a template you can use to reach out to the vendor:
+
+---
+
+**Subject:** Request for Impact Assessment of New Plugin Installation in CloudBees CI
+
+**Dear [Vendor's Name or Support Team],**
+
+We have received a request to install the following plugins in our CloudBees CI environment:
+
+1. [Plugin Name 1]
+2. [Plugin Name 2]
+3. [Plugin Name 3]
+
+Before proceeding with the installation, we would like to understand the potential impact of these plugins on our CloudBees CI environment, specifically in the following areas:
+
+1. **Performance:** Will these plugins have any effect on the performance or resource utilization of our CloudBees CI instance?
+   
+2. **Compatibility:** Are these plugins fully compatible with our current version of CloudBees CI and other installed plugins? 
+
+3. **Security:** Do these plugins introduce any known security vulnerabilities or require special configurations to ensure a secure environment?
+
+4. **Stability:** Could the installation of these plugins lead to any stability issues or conflicts with existing configurations or plugins?
+
+5. **Maintenance:** Are there any additional maintenance or support requirements associated with these plugins?
+
+6. **Rollback:** In case of issues, what is the recommended rollback process for these plugins?
+
+Your insights will be crucial in making an informed decision. Please provide us with detailed information or documentation that can help us assess these aspects.
+
+Thank you for your prompt attention to this matter.
+
+**Best regards,**
+
+[Your Full Name]  
+[Your Job Title]  
+[Your Contact Information]
+
+---
+
+This template covers the key areas that might be impacted by the plugin installation. You can modify it based on specific requirements or additional questions you may have.
