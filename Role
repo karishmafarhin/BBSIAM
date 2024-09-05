@@ -1,0 +1,19 @@
+Here’s the revised version focusing only on following up and gathering details from project admins:
+
+### **Problem Statement:**
+Project admins are not responding in a timely manner to requests for critical information regarding user cleanup, inactive repository cleanup, and role owner details. This lack of response is delaying the process of sharing these details with the SIAM team, which is essential for maintaining system integrity and efficient resource management.
+
+### **Solution:**
+Create group chats in Microsoft Teams for each project, including the project admins and their leaders, to facilitate quicker responses. The focus will be on gathering:
+- **User Cleanup Details:** Identify inactive users for removal.
+- **Inactive Repository Cleanup Details:** Confirm which repositories are no longer in use.
+- **Role Owner Details:** Verify the current role owners for proper access control.
+This information will then be shared with the SIAM team.
+
+### **Acceptance Criteria:**
+1. Group chats are created in Microsoft Teams for each project, with project admins and their leaders included.
+2. The tasks of user cleanup, inactive repository cleanup, and role owner updates are clearly communicated within the group chat.
+3. Project admins provide the requested information within the agreed-upon timeline.
+4. The collected information is shared with the SIAM team for further action.
+
+This version ensures that the goal is to gather the necessary details without performing the cleanup tasks. Does this meet your requirements?
