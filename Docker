@@ -1,0 +1,31 @@
+Yes, it's generally a good idea to stop the Docker socket service as well when changing critical settings like the root directory. The Docker socket (/var/run/docker.sock) is used for communication between the Docker client and the Docker daemon.
+
+Here's the sequence you should follow:
+
+1. Stop Docker service:
+
+sudo systemctl stop docker
+
+
+2. Stop Docker socket: You can also stop the Docker socket service:
+
+sudo systemctl stop docker.socket
+
+
+3. Move Docker data (if needed):
+
+sudo mv /var/lib/docker /new/docker/root/directory
+
+
+4. Update the Docker configuration: Edit /etc/docker/daemon.json and change the "data-root" path.
+
+
+5. Start Docker service and socket: First, start the Docker daemon and then the Docker socket:
+
+sudo systemctl start docker
+sudo systemctl start docker.socket
+
+
+
+Stopping the socket ensures no processes can communicate with the Docker daemon during the configuration change. However, in many cases, stopping the docker service alone is sufficient, as the socket depends on the daemon.
+
