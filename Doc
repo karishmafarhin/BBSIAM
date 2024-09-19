@@ -1,0 +1,22 @@
+Here’s an update you can share with your team:
+
+
+---
+
+Task Update:
+
+Plan Status: The plan will be ready by tomorrow for review.
+
+Dependency: We have a dependency on the Unix team to provide the Docker root file details since we don’t have the required permissions to check on a few servers. An incident has been raised with them.
+
+Follow-Up: 
+is following up with the Unix team to gather the necessary data. Once we receive this information, we will finalize the plan and the associated change tickets.
+
+Implementation Timeline: Due to these dependencies, we expect to be ready for implementation by next week.
+
+
+
+---
+
+Let me know if you need any changes.
+
