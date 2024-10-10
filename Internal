@@ -1,0 +1,2 @@
+"As part of SIAM enablement for Bitbucket, we are revoking Project Creator access for all users and restricting admin privileges for select associates. Going forward, project creation will be automated through a pipeline with comprehensive validation mechanisms. Until this pipeline is fully implemented, any new project creation requests must be submitted via an RITM (Request Item)."
+
