@@ -53,5 +53,15 @@ Best regards,
 
 ---
 
-Feel free to adjust dates, contact information, and any other details specific to your organization.
+Feel free to adjust dates, contact information, and any other details specific to your organizat
 
+
+
+
+Additional Details for Project Creation:
+
+For any new project creation in Bitbucket, application teams must submit an RITM to the DevOps team, including details of the Project Admins.
+
+The DevOps team will create the project in Bitbucket and then raise an RITM to the SIAM team to create the necessary SIAM Roles.
+
+The SIAM team will create these roles and map the provided admins as Role Owners.
