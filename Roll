@@ -76,3 +76,16 @@ Do not add users manually: Project Admins must not add any user manually to eith
 Security Violations: Any manual additions will be tracked as security violations, and appropriate actions may be taken as per compliance policies.
 
 All access must go through the SIAM platform to ensure compliance and proper tracking.
+
+
+What’s Changing:
+
+Bitbucket access requests will now be managed through the SIAM platform.
+
+The provisioning process will be automated, reducing manual intervention and ensuring faster access turnaround times.
+
+All new access requests, modifications, and deprovisioning actions will be routed through SIAM.
+
+Group-level access will no longer be available in Bitbucket. All access will be managed at the individual user level through SIAM.
+
+All previous groups have been removed, and users have been successfully migrated to individual roles for streamlined access management.
