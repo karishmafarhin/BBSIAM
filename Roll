@@ -1,0 +1,57 @@
+For the rollout of Bitbucket access provisioning via SIAM, you can use the following communication draft to inform the application teams:
+
+
+---
+
+Subject: Rollout of Bitbucket Access Provisioning via SIAM
+
+Dear Application Teams,
+
+We are excited to announce the rollout of Bitbucket access provisioning via SIAM as part of our continuous effort to streamline and automate access management processes. This change aims to enhance security, improve efficiency, and provide a more seamless experience for access requests and approvals.
+
+What’s Changing:
+
+Bitbucket access requests will now be managed through the SIAM platform.
+
+The provisioning process will be automated, reducing manual intervention and ensuring faster access turnaround times.
+
+All new access requests, modifications, and deprovisioning actions will be routed through SIAM.
+
+
+Key Benefits:
+
+Improved Security: Automated workflows will ensure adherence to compliance policies and reduce the risk of unauthorized access.
+
+Efficiency: Reduced turnaround times for access provisioning.
+
+Traceability: A streamlined audit trail of access requests and approvals for enhanced accountability.
+
+
+Actions Required:
+
+Moving forward, all Bitbucket access requests should be submitted through the SIAM platform. Please discontinue using any old methods or manual processes for requesting access.
+
+Familiarize yourself with the SIAM platform if you haven’t already done so. Training resources and documentation are available [here/attached].
+
+
+Rollout Timeline:
+
+Start Date: [Insert Date]
+
+End Date: [Insert Date, if applicable]
+
+
+If you have any questions or need assistance, please feel free to reach out to [Support Team/Your Contact Person]. We appreciate your cooperation as we work to improve our processes and security measures.
+
+Thank you for your attention and support.
+
+Best regards,
+[Your Name]
+[Your Position]
+[Your Contact Information]
+
+
+---
+
+Feel free to adjust dates, contact information, and any other details specific to your organization.
+
