@@ -65,3 +65,14 @@ For any new project creation in Bitbucket, application teams must submit an RITM
 The DevOps team will create the project in Bitbucket and then raise an RITM to the SIAM team to create the necessary SIAM Roles.
 
 The SIAM team will create these roles and map the provided admins as Role Owners.
+
+
+
+
+Don’ts for Project Admins:
+
+Do not add users manually: Project Admins must not add any user manually to either Projects or Repositories, even if they have the access to do so.
+
+Security Violations: Any manual additions will be tracked as security violations, and appropriate actions may be taken as per compliance policies.
+
+All access must go through the SIAM platform to ensure compliance and proper tracking.
