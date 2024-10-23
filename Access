@@ -1,0 +1,110 @@
+Bitbucket Access Management Guidelines
+
+This document outlines the steps for requesting access to Bitbucket, based on user type and scenario.
+
+
+---
+
+1. New User Access
+
+A new user without any prior Bitbucket access must follow the steps below:
+
+1. Request a License Role
+
+A license is required to access Bitbucket.
+
+Users must first raise a request for a License role through the internal access management system.
+
+
+
+2. Request Project or Repository Roles
+
+Once the license is approved, the user can raise separate requests for:
+
+Project-level roles (e.g., Project Admin, Developer, Viewer).
+
+Repository-level roles (e.g., Repo Admin, Write, Read access).
+
+
+
+
+
+
+---
+
+2. Existing User Access
+
+For users already licensed and active on Bitbucket:
+
+Direct Role Requests
+
+Existing users can request new or additional access roles directly:
+
+Project-level roles as needed.
+
+Repository-level roles for specific repositories.
+
+
+
+
+
+---
+
+3. Unlicensed User Access
+
+If an unlicensed user tries to gain access to a project or repository:
+
+1. Request a License Role
+
+The unlicensed user must first raise a request for a License role.
+
+Once approved, they can proceed with requests for project or repository roles.
+
+
+
+
+
+---
+
+4. SecOps Team Access
+
+Users from the SecOps team need access to security-related features and must:
+
+1. Request AppSec Role
+
+Raise a request for the AppSec role required to perform their security-related tasks.
+
+
+
+
+
+---
+
+5. Release Management (RM) Team Access
+
+Release Management team members must follow the steps below:
+
+1. Request RM Role
+
+Raise a request for the RM role to manage releases and deployment activities.
+
+
+
+
+
+---
+
+Additional Notes
+
+Approval Workflow: All access requests are subject to approval from relevant project/repository admins and license administrators.
+
+Role Revocation: Inactive or unauthorized roles may be revoked as per Bitbucket governance policies.
+
+Audit and Compliance: All role changes are logged for auditing and compliance purposes.
+
+
+
+---
+
+This document ensures smooth access management and governance across Bitbucket, helping users request the right roles efficiently based on their needs.
+
