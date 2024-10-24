@@ -1,0 +1,14 @@
+Subject: Clarification on Removing Unused Roles from uDeploy Teams
+
+Hi [Recipient],
+
+In uDeploy, we currently have teams managing access to resources like components, applications, environments, etc. Each team has specific roles configured, with users assigned to those roles.
+
+These roles are created under the Role Configuration section. However, all roles created in this section automatically become part of every team, regardless of whether they are used by that team or not.
+
+We would like to understand if it is possible to remove unused roles from specific teams. The goal is to streamline the role structure, ensuring that each team only retains the roles relevant to its needs. This would enhance clarity and reduce unnecessary configurations.
+
+Please let us know if this approach is feasible or if there are any implications we should consider.
+
+Best regards,
+[Your Name]
