@@ -18,3 +18,24 @@ Best regards,
 ---
 
 This version clearly states the action needed, emphasizes the urgency, and includes a polite reminder.
+
+
+
+Subject: Update on Bitbucket User Access Provisioning via SIAM
+
+Hi [Recipient],
+
+Due to unavoidable circumstances, the SIAM team has postponed the rollout of Bitbucket user access provisioning to January 2025. Until then, please follow the process below for provisioning and deprovisioning user access:
+
+1. Admins can manually manage access by adding or removing users in the project user section or repo user section.
+
+
+2. Groups must not be added to projects or repositories—only individual user access is allowed.
+
+
+
+Thank you for your cooperation.
+
+Best regards,
+[Your Name]
+
