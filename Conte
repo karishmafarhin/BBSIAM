@@ -39,3 +39,28 @@ Thank you for your cooperation.
 Best regards,
 [Your Name]
 
+
+
+Subject: Bitbucket Access Management for SecOps Teams
+
+Hi SecOps Team,
+
+Due to the postponement of the SIAM-managed Bitbucket user access rollout to January 2025, please follow the interim process below:
+
+We have created a new Bitbucket global group for App Security and migrated users from the old GL group to this new global group.
+
+This new group has been added to all projects in Bitbucket.
+
+
+For any user additions or removals in this group, please contact the DevOps team, who will manage these changes until the SIAM rollout.
+
+Additionally, the user migration from groups to the user section was completed and sent for validation in September, with no access issues reported to date.
+
+Thank you for your understanding and cooperation.
+
+Best regards,
+[Your Name]
+
+
+
+
