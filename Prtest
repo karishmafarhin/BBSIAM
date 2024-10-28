@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Configuration
+USERNAME="your_bitbucket_username"
+APP_PASSWORD="your_app_password"
+WORKSPACE="your_workspace"
+REPO_SLUG="your_repository"
+SOURCE_BRANCH="feature-branch"  # Branch to merge
+DESTINATION_BRANCH="main"       # Target branch
+
+# Create a pull request
+create_pull_request() {
+  echo "Creating pull request from $SOURCE_BRANCH to $DESTINATION_BRANCH..."
+  
+  PR_RESPONSE=$(curl -s -X POST -u "$USERNAME:$APP_PASSWORD" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "title": "Automated Pull Request",
+      "source": { "branch": { "name": "'"$SOURCE_BRANCH"'" } },
+      "destination": { "branch": { "name": "'"$DESTINATION_BRANCH"'" } },
+      "description": "This pull request was created automatically.",
+      "close_source_branch": true
+    }' \
+    "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO_SLUG/pullrequests")
+
+  PR_ID=$(echo "$PR_RESPONSE" | jq -r '.id')
+
+  if [ "$PR_ID" != "null" ]; then
+    echo "Pull request created successfully with ID: $PR_ID"
+    merge_pull_request "$PR_ID"
+  else
+    echo "Failed to create pull request: $(echo "$PR_RESPONSE" | jq -r '.error.message')"
+    exit 1
+  fi
+}
+
+# Merge the pull request
+merge_pull_request() {
+  local PR_ID=$1
+  echo "Merging pull request ID: $PR_ID..."
+
+  MERGE_RESPONSE=$(curl -s -X POST -u "$USERNAME:$APP_PASSWORD" \
+    "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO_SLUG/pullrequests/$PR_ID/merge")
+
+  if echo "$MERGE_RESPONSE" | grep -q '"state": "MERGED"'; then
+    echo "Pull request merged successfully."
+  else
+    echo "Failed to merge pull request: $(echo "$MERGE_RESPONSE" | jq -r '.error.message')"
+    exit 1
+  fi
+}
+
+# Main Logic
+create_pull_request
