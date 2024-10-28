@@ -33,7 +33,22 @@ create_pull_request() {
     exit 1
   fi
 }
+# Approve the pull request
+approve_pull_request() {
+  local PR_ID=$1
+  echo "Approving pull request ID: $PR_ID..."
 
+  APPROVE_RESPONSE=$(curl -s -X POST -u "$USERNAME:$APP_PASSWORD" \
+    "https://api.bitbucket.org/2.0/repositories/$PROJECT_KEY/$REPO_SLUG/pullrequests/$PR_ID/approve")
+
+  if echo "$APPROVE_RESPONSE" | grep -q '"approved": true'; then
+    echo "Pull request approved successfully."
+    merge_pull_request "$PR_ID"
+  else
+    echo "Failed to approve pull request: $(echo "$APPROVE_RESPONSE" | jq -r '.error.message')"
+    exit 1
+  fi
+}
 # Merge the pull request
 merge_pull_request() {
   local PR_ID=$1
