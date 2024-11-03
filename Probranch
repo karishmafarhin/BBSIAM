@@ -1,0 +1,88 @@
+You're right; the script I provided earlier simply checks if a specific group already has permissions but does not account for fully preserving the existing permissions when adding a new one. Here’s an improved version that first retrieves all existing branch permissions and re-submits them along with the new group, ensuring that all previous permissions remain intact:
+
+#!/bin/bash
+
+# Bitbucket Server URL, credentials, and configuration
+BASE_URL="https://<bitbucket-server-url>/rest/branch-permissions/2.0"
+USERNAME="your-username"
+PASSWORD="your-password"
+NEW_GROUP="new-group"  # Group you want to add
+MATCHER_ID="REPO_WRITE"  # Permission type (e.g., REPO_WRITE or REPO_READ)
+DISPLAY_ID="write"  # Display name for the permission type
+
+# File containing project keys
+PROJECT_KEYS_FILE="project_keys.txt"
+
+# Function to fetch existing branch permissions for a repository
+fetch_branch_permissions() {
+    local project_key=$1
+    local repo_slug=$2
+    curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos/$repo_slug/permissions"
+}
+
+# Function to update branch permissions by preserving existing ones and adding a new group
+update_branch_permissions() {
+    local project_key=$1
+    local repo_slug=$2
+    local new_group=$3
+
+    # Fetch current branch permissions
+    permissions=$(fetch_branch_permissions "$project_key" "$repo_slug")
+
+    # Parse and build the JSON payload to preserve existing permissions
+    existing_permissions=$(echo "$permissions" | jq '.values')
+
+    # Check if the group already exists in permissions
+    if echo "$existing_permissions" | jq -e --arg group "$new_group" '.[] | select(.group.name == $group)' > /dev/null; then
+        echo "Group $new_group already exists in permissions for $repo_slug."
+    else
+        # Add the new group permission entry
+        new_permission=$(jq -n --arg group "$new_group" --arg matcher_id "$MATCHER_ID" --arg display_id "$DISPLAY_ID" '{
+            type: "group",
+            group: { name: $group },
+            matcher: { id: $matcher_id, displayId: $display_id }
+        }')
+
+        # Combine existing permissions with the new group permission
+        updated_permissions=$(echo "$existing_permissions" | jq --argjson new_permission "$new_permission" '. + [$new_permission]')
+
+        # Send the updated permissions payload back to Bitbucket
+        curl -X PUT -u "$USERNAME:$PASSWORD" -H "Content-Type: application/json" \
+            -d "{\"values\": $updated_permissions}" "$BASE_URL/projects/$project_key/repos/$repo_slug/permissions"
+
+        echo "Group $new_group added to $repo_slug with existing permissions preserved."
+    fi
+}
+
+# Loop through each project key and each repository to update permissions
+while IFS= read -r project_key; do
+    # Fetch repositories for each project key
+    repo_response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos?limit=100")
+    repo_slugs=$(echo "$repo_response" | jq -r '.values[].slug')
+
+    for repo_slug in $repo_slugs; do
+        update_branch_permissions "$project_key" "$repo_slug" "$NEW_GROUP"
+    done
+done < "$PROJECT_KEYS_FILE"
+
+Explanation of Key Sections:
+
+1. Fetching Existing Permissions: The script retrieves existing permissions using fetch_branch_permissions and stores them in existing_permissions.
+
+
+2. Checking and Adding the Group: If the group doesn’t already have permissions, it adds a new permission object to the existing_permissions JSON array.
+
+
+3. Updating Permissions: It then re-submits all permissions, including the new group, using a PUT request to replace the branch permissions without disturbing any existing ones.
+
+
+
+Notes
+
+Ensure that MATCHER_ID and DISPLAY_ID match your required permission type (e.g., REPO_WRITE for write permissions).
+
+Adjust the BASE_URL, USERNAME, and PASSWORD variables as needed.
+
+
+This method ensures that only the new group is added, while all other permissions remain unchanged.
+
