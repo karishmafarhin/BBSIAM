@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# Bitbucket Server URL, credentials, and configuration
+BASE_URL="https://<bitbucket-server-url>/rest/branch-permissions/2.0"
+USERNAME="your-username"
+PASSWORD="your-password"
+OLD_GROUP="abc"  # Group name to replace
+NEW_GROUP="xyz"  # New group name
+PROJECT_KEYS_FILE="project_keys.txt"  # File with list of project keys
+
+# Function to fetch existing branch permissions for a repository
+fetch_branch_permissions() {
+    local project_key=$1
+    local repo_slug=$2
+    curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos/$repo_slug/permissions"
+}
+
+# Function to update branch permissions by replacing OLD_GROUP with NEW_GROUP
+update_branch_permissions() {
+    local project_key=$1
+    local repo_slug=$2
+    local old_group=$3
+    local new_group=$4
+
+    # Fetch current branch permissions
+    permissions=$(fetch_branch_permissions "$project_key" "$repo_slug")
+
+    # Parse existing permissions, replacing old group with new group where found
+    updated_permissions=$(echo "$permissions" | jq --arg old_group "$old_group" --arg new_group "$new_group" '
+        .values | map(
+            if .type == "group" and .group.name == $old_group then
+                .group.name = $new_group  # Replace group name
+            else
+                .
+            end
+        )
+    ')
+
+    # Send the updated permissions payload back to Bitbucket if there was a change
+    if [ "$(echo "$updated_permissions" | jq length)" -ne "$(echo "$permissions" | jq '.values | length')" ]; then
+        # Convert updated permissions back to JSON array format and send with PUT request
+        curl -X PUT -u "$USERNAME:$PASSWORD" -H "Content-Type: application/json" \
+            -d "{\"values\": $updated_permissions}" "$BASE_URL/projects/$project_key/repos/$repo_slug/permissions"
+
+        echo "Updated permissions for project $project_key, repo $repo_slug: replaced group $old_group with $new_group."
+    else
+        echo "No permissions updated for project $project_key, repo $repo_slug. Group $old_group not found."
+    fi
+}
+
+# Loop through each project key and each repository to update permissions
+while IFS= read -r project_key; do
+    # Fetch repositories for each project key
+    repo_response=$(curl -s -u "$USERNAME:$PASSWORD" "$BASE_URL/projects/$project_key/repos?limit=100")
+    repo_slugs=$(echo "$repo_response" | jq -r '.values[].slug')
+
+    for repo_slug in $repo_slugs; do
+        update_branch_permissions "$project_key" "$repo_slug" "$OLD_GROUP" "$NEW_GROUP"
+    done
+done < "$PROJECT_KEYS_FILE"
