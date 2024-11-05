@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Variables
+WORKSPACE="your-workspace"  # Your workspace ID
+REPO_SLUG="your-repo-slug"  # Your repository name
+SOURCE_BRANCH="source-branch"  # The branch you want to tag and create a PR from
+DEST_BRANCH="destination-branch"  # The branch you are merging into
+CHANGE_TICKET="CHG1234567"  # Your change ticket number
+USERNAME="your-username"
+APP_PASSWORD="your-app-password"
+
+# Validation: Check if change ticket is null or does not match the pattern
+if [ -z "$CHANGE_TICKET" ] || [[ ! "$CHANGE_TICKET" =~ ^CHG[0-9]{7}$ ]]; then
+  echo "Error: Change ticket is either null/empty or does not match the required pattern (CHG followed by 7 digits). Aborting."
+  exit 1
+fi
+
+# API call to get the latest commit ID of the source branch
+COMMIT_ID=$(curl -s -u "$USERNAME:$APP_PASSWORD" \
+  "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO_SLUG/refs/branches/$SOURCE_BRANCH" | \
+  jq -r '.target.hash')
+
+# Check if the commit ID was retrieved successfully
+if [ -z "$COMMIT_ID" ] || [ "$COMMIT_ID" == "null" ]; then
+  echo "Error: Failed to retrieve the commit ID for branch '$SOURCE_BRANCH'. Aborting."
+  exit 1
+fi
+
+echo "Commit ID for '$SOURCE_BRANCH' is: $COMMIT_ID"
+
+# API call to create a tag in Bitbucket
+TAG_NAME="$CHANGE_TICKET"
+RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST -u "$USERNAME:$APP_PASSWORD" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "'$TAG_NAME'",
+    "target": {
+      "hash": "'$COMMIT_ID'"
+    }
+  }' \
+  "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO_SLUG/refs/tags")
+
+if [ "$RESPONSE" -ne 201 ]; then
+  echo "Error: Failed to create the tag '$TAG_NAME' in Bitbucket. HTTP status code: $RESPONSE"
+  exit 1
+fi
+
+echo "Successfully created the tag '$TAG_NAME' in Bitbucket."
+
+# API call to create a pull request
+PR_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST -u "$USERNAME:$APP_PASSWORD" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Pull Request for '$SOURCE_BRANCH'",
+    "source": {
+      "branch": {
+        "name": "'$SOURCE_BRANCH'"
+      }
+    },
+    "destination": {
+      "branch": {
+        "name": "'$DEST_BRANCH'"
+      }
+    },
+    "description": "This pull request is associated with change ticket: '$CHANGE_TICKET'"
+  }' \
+  "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO_SLUG/pullrequests")
+
+if [ "$PR_RESPONSE" -ne 201 ]; then
+  echo "Error: Failed to create the pull request. HTTP status code: $PR_RESPONSE"
+  exit 1
+fi
+
+echo "Pull request created successfully."
