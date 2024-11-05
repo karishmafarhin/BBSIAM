@@ -61,3 +61,16 @@ if [ -z "$CHANGE_TICKET" ]; then
   echo "Error: Change ticket is null or empty. Aborting pull request creation."
   exit 1
 fi
+
+# Validate the change ticket pattern
+if [[ ! "$CHANGE_TICKET" =~ ^CHG[0-9]{7}$ ]]; then
+  echo "Error: Change ticket does not match the required pattern (CHG followed by 7 digits). Aborting pull request creation."
+  exit 1
+fi
+
+
+# Combined validation check: null/empty check and pattern validation
+if [ -z "$CHANGE_TICKET" ] || [[ ! "$CHANGE_TICKET" =~ ^CHG[0-9]{7}$ ]]; then
+  echo "Error: Change ticket is either null/empty or does not match the required pattern (CHG followed by 7 digits). Aborting pull request creation."
+  exit 1
+fi
