@@ -52,3 +52,12 @@ merge_pull_request() {
 
 # Main Logic
 create_pull_request
+
+
+
+
+# Check if the change ticket is empty or null
+if [ -z "$CHANGE_TICKET" ]; then
+  echo "Error: Change ticket is null or empty. Aborting pull request creation."
+  exit 1
+fi
