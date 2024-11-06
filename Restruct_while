@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Variables
+BITBUCKET_URL="https://bitbucket.example.com"
+USERNAME="your_username"
+PASSWORD="your_password"
+PROJECT_KEY="your_project_key"
+REPO_SLUG="your_repository_slug"
+OLD_GROUP="old_group_name"
+NEW_GROUP="new_group_name"
+
+# Step 1: Fetch Current Branch Permissions
+echo "Fetching current branch permissions..."
+RESPONSE=$(curl -u "$USERNAME:$PASSWORD" -s -X GET "$BITBUCKET_URL/rest/branch-permissions/2.0/projects/$PROJECT_KEY/repos/$REPO_SLUG")
+
+# Step 2: Parse and Loop Through Permissions to Find the Restriction with the OLD_GROUP
+echo "Searching for the restriction with the group '$OLD_GROUP'..."
+RESTRICTION_ID=""
+UPDATED_RESTRICTIONS=""
+
+# Use `jq` to iterate through each restriction and check for the OLD_GROUP
+echo "$RESPONSE" | jq -c '.values[]' | while read -r row; do
+    GROUPS=$(echo "$row" | jq -r '.groups | @csv')
+    
+    if [[ $GROUPS == *"$OLD_GROUP"* ]]; then
+        RESTRICTION_ID=$(echo "$row" | jq -r '.id')
+        echo "Found restriction ID: $RESTRICTION_ID"
+        
+        # Step 3: Update the Group in the Restriction
+        UPDATED_RESTRICTION=$(echo "$row" | jq --arg newGroup "$NEW_GROUP" '.groups = [$newGroup]')
+        UPDATED_RESTRICTIONS="$UPDATED_RESTRICTIONS $UPDATED_RESTRICTION"
+    else
+        UPDATED_RESTRICTIONS="$UPDATED_RESTRICTIONS $row"
+    fi
+done
+
+# If Restriction ID not found, exit
+if [ -z "$RESTRICTION_ID" ]; then
+    echo "Restriction with group '$OLD_GROUP' not found."
+    exit 1
+fi
+
+# Step 4: Delete the Old Restriction
+echo "Deleting the old restriction with ID: $RESTRICTION_ID..."
+curl -u "$USERNAME:$PASSWORD" -X DELETE "$BITBUCKET_URL/rest/branch-permissions/2.0/projects/$PROJECT_KEY/repos/$REPO_SLUG/restrictions/$RESTRICTION_ID"
+
+# Step 5: Add the Updated Restriction
+echo "Adding updated restriction with the new group '$NEW_GROUP'..."
+for restriction in $UPDATED_RESTRICTIONS; do
+    curl -u "$USERNAME:$PASSWORD" -H "Content-Type: application/json" -X POST "$BITBUCKET_URL/rest/branch-permissions/2.0/projects/$PROJECT_KEY/repos/$REPO_SLUG/restrictions" -d "$restriction"
+done
+
+echo "Group replacement completed successfully!"
