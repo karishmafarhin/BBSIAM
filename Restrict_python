@@ -1,0 +1,76 @@
+import requests
+import json
+
+# Variables
+BITBUCKET_URL = "https://bitbucket.example.com"
+USERNAME = "your_username"
+PASSWORD = "your_password"
+PROJECT_KEY = "your_project_key"
+REPO_SLUG = "your_repository_slug"
+OLD_GROUP = "old_group_name"
+NEW_GROUP = "new_group_name"
+
+# Step 1: Fetch Current Branch Permissions
+print("Fetching current branch permissions...")
+response = requests.get(
+    f"{BITBUCKET_URL}/rest/branch-permissions/2.0/projects/{PROJECT_KEY}/repos/{REPO_SLUG}",
+    auth=(USERNAME, PASSWORD)
+)
+
+if response.status_code != 200:
+    print("Failed to fetch branch permissions:", response.content)
+    exit(1)
+
+data = response.json()
+restrictions = data.get("values", [])
+
+# Step 2: Search for the Restriction with the OLD_GROUP
+restriction_id = None
+updated_restrictions = []
+
+for restriction in restrictions:
+    groups = restriction.get("groups", [])
+    
+    if OLD_GROUP in groups:
+        restriction_id = restriction.get("id")
+        print(f"Found restriction ID: {restriction_id}")
+        
+        # Step 3: Update the Group in the Restriction
+        restriction["groups"] = [NEW_GROUP]
+        updated_restrictions.append(restriction)
+    else:
+        updated_restrictions.append(restriction)
+
+# Check if the Restriction ID was found
+if not restriction_id:
+    print(f"Restriction with group '{OLD_GROUP}' not found.")
+    exit(1)
+
+# Step 4: Delete the Old Restriction
+print(f"Deleting the old restriction with ID: {restriction_id}...")
+delete_response = requests.delete(
+    f"{BITBUCKET_URL}/rest/branch-permissions/2.0/projects/{PROJECT_KEY}/repos/{REPO_SLUG}/restrictions/{restriction_id}",
+    auth=(USERNAME, PASSWORD)
+)
+
+if delete_response.status_code != 204:
+    print("Failed to delete the old restriction:", delete_response.content)
+    exit(1)
+
+# Step 5: Add the Updated Restrictions
+print(f"Adding updated restriction with the new group '{NEW_GROUP}'...")
+headers = {"Content-Type": "application/json"}
+
+for restriction in updated_restrictions:
+    add_response = requests.post(
+        f"{BITBUCKET_URL}/rest/branch-permissions/2.0/projects/{PROJECT_KEY}/repos/{REPO_SLUG}/restrictions",
+        auth=(USERNAME, PASSWORD),
+        headers=headers,
+        data=json.dumps(restriction)
+    )
+
+    if add_response.status_code != 201:
+        print("Failed to add updated restriction:", add_response.content)
+        exit(1)
+
+print("Group replacement completed successfully!")
