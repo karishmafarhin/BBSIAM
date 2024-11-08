@@ -1,0 +1,141 @@
+pipeline {
+    agent any
+    environment {
+        BITBUCKET_USER = 'your_bitbucket_username'
+        BITBUCKET_PASSWORD = 'your_bitbucket_password'
+        BITBUCKET_GROUP = 'group_rm'
+        BITBUCKET_WORKSPACE = 'your_workspace'
+        SERVICENOW_API_URL = 'https://your_instance.service-now.com/api/now/table/change_request'
+        SERVICENOW_USER = 'your_servicenow_username'
+        SERVICENOW_PASSWORD = 'your_servicenow_password'
+        CHANGE_TICKET = 'CHG1234567'
+        REQUESTOR_EMAIL = 'requestor@example.com'
+        DL_EMAILS = 'distribution_list@example.com'
+    }
+    stages {
+        stage('User Validation') {
+            steps {
+                script {
+                    // Retrieve the user who triggered the job
+                    def currentUser = env.BUILD_USER_ID
+                    // Check if the user is part of the specified Bitbucket group
+                    def isUserInGroup = sh(script: "curl -u ${BITBUCKET_USER}:${BITBUCKET_PASSWORD} -X GET https://bitbucket.yourdomain.com/rest/api/1.0/admin/groups/more-members?context=${BITBUCKET_GROUP}&filter=${currentUser}", returnStatus: true) == 0
+
+                    if (!isUserInGroup) {
+                        error "User ${currentUser} is not part of the required Bitbucket group: ${BITBUCKET_GROUP}. Job aborted."
+                    }
+                }
+            }
+        }
+        
+        stage('Change Ticket Validation') {
+            steps {
+                script {
+                    if (!CHANGE_TICKET.matches(/^CHG\\d{7}$/)) {
+                        error "Invalid change ticket format. Expected format: CHG followed by 7 digits."
+                    }
+                    def ticketResponse = sh(
+                        script: "curl -u ${SERVICENOW_USER}:${SERVICENOW_PASSWORD} -X GET ${SERVICENOW_API_URL}?sysparm_query=number=${CHANGE_TICKET} -H 'Accept: application/json'",
+                        returnStdout: true
+                    )
+                    def ticketData = readJSON text: ticketResponse
+                    if (ticketData.result.size() == 0 || ticketData.result[0].state != 'Implement' || !isInChangeWindow(ticketData.result[0])) {
+                        error "Change ticket ${CHANGE_TICKET} is either invalid, not in Implement stage, or out of the change window."
+                    }
+                }
+            }
+        }
+
+        stage('Branch Validation') {
+            steps {
+                script {
+                    def sourceBranch = "release" // Replace with actual source branch input
+                    def destinationBranch = "master" // Replace with actual destination branch input
+
+                    if (!(sourceBranch.startsWith('hotfix') || sourceBranch.startsWith('release'))) {
+                        error "Source branch must be either 'hotfix' or 'release'. Current: ${sourceBranch}"
+                    }
+
+                    if (destinationBranch != 'master') {
+                        error "Destination branch must be 'master'. Current: ${destinationBranch}"
+                    }
+                }
+            }
+        }
+
+        stage('Pull Request Creation and Approval') {
+            steps {
+                script {
+                    def prResponse = sh(
+                        script: """curl -u ${BITBUCKET_USER}:${BITBUCKET_PASSWORD} -X POST -H "Content-Type: application/json" \\
+                                   -d '{"title": "Automated PR", "description": "${CHANGE_TICKET}", "state": "OPEN", "open": true, "closed": false, \\
+                                        "fromRef": {"id": "refs/heads/${sourceBranch}"}, "toRef": {"id": "refs/heads/${destinationBranch}"}}' \\
+                                   https://bitbucket.yourdomain.com/rest/api/1.0/projects/${BITBUCKET_WORKSPACE}/repos/${repoName}/pull-requests""",
+                        returnStdout: true
+                    )
+                    def prData = readJSON text: prResponse
+                    def prId = prData.id
+                    sh """curl -u ${BITBUCKET_USER}:${BITBUCKET_PASSWORD} -X POST -H "Content-Type: application/json" \\
+                           -d '{"user": {"name": "service_account"}, "approved": true}' \\
+                           https://bitbucket.yourdomain.com/rest/api/1.0/projects/${BITBUCKET_WORKSPACE}/repos/${repoName}/pull-requests/${prId}/participants"""
+                }
+            }
+        }
+
+        stage('Merge Pull Request') {
+            steps {
+                script {
+                    def prVersionResponse = sh(
+                        script: """curl -u ${BITBUCKET_USER}:${BITBUCKET_PASSWORD} -X GET \\
+                                   https://bitbucket.yourdomain.com/rest/api/1.0/projects/${BITBUCKET_WORKSPACE}/repos/${repoName}/pull-requests/${prId}""",
+                        returnStdout: true
+                    )
+                    def prVersionData = readJSON text: prVersionResponse
+                    def prVersion = prVersionData.version
+                    sh """curl -u ${BITBUCKET_USER}:${BITBUCKET_PASSWORD} -X POST -H "Content-Type: application/json" \\
+                           -d '{"version": ${prVersion}}' \\
+                           https://bitbucket.yourdomain.com/rest/api/1.0/projects/${BITBUCKET_WORKSPACE}/repos/${repoName}/pull-requests/${prId}/merge"""
+                }
+            }
+        }
+
+        stage('Generate CSV Report') {
+            steps {
+                script {
+                    def csvFile = "${env.WORKSPACE}/pr_details.csv"
+                    writeFile file: csvFile, text: """Triggered By,Change Ticket,Source Branch,Destination Branch,Tag Name,Change Ticket Status,Change Window Start,Change Window End,Merge Status
+${env.BUILD_USER_ID},${CHANGE_TICKET},${sourceBranch},${destinationBranch},${CHANGE_TICKET},Implement,${changeWindowStart},${changeWindowEnd},Successful
+"""
+                }
+            }
+        }
+
+        stage('Send Notification Email') {
+            steps {
+                script {
+                    def emailBody = """
+                        Pull Request Summary:
+                        - Triggered by: ${env.BUILD_USER_ID}
+                        - Change Ticket: ${CHANGE_TICKET}
+                        - Source Branch: ${sourceBranch}
+                        - Destination Branch: ${destinationBranch}
+                        - Change Ticket Status: Implement
+                        - Change Window: ${changeWindowStart} to ${changeWindowEnd}
+                        - Merge Status: Successful
+                    """
+                    emailext(
+                        subject: "Pull Request for Change Ticket ${CHANGE_TICKET} Completed",
+                        body: emailBody,
+                        to: "${REQUESTOR_EMAIL},${DL_EMAILS}",
+                        replyTo: "${env.BUILD_USER_EMAIL}",
+                        attachmentsPattern: 'pr_details.csv'
+                    )
+                }
+            }
+        }
+    }
+}
+
+def isInChangeWindow(changeTicket) {
+    return true // Placeholder for actual window validation logic
+}
