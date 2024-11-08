@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# Constants (set accordingly)
+BITBUCKET_URL="https://your-bitbucket-server"
+JIRA_URL="https://your-servicenow-instance"
+USER_GROUP="group_rm"
+CSV_FILE="deployment_details.csv"
+EMAIL_LIST="requestor@example.com,distribution1@example.com,distribution2@example.com"
+DESTINATION_BRANCH="master"
+
+# Input Variables
+CHANGE_TICKET="$1"
+SOURCE_BRANCH="$2"
+DESTINATION_BRANCH_INPUT="$3"
+TRIGGER_USER="$(whoami)"  # Jenkins triggers this, or customize as needed
+
+# Function to validate change ticket format and existence
+validate_change_ticket() {
+  if [[ ! "$CHANGE_TICKET" =~ ^CHG[0-9]{7}$ ]]; then
+    echo "Invalid change ticket format. Exiting."
+    exit 1
+  fi
+  
+  # Fetch change ticket details from ServiceNow
+  response=$(curl -s -u "username:password" "$JIRA_URL/api/ticket/$CHANGE_TICKET")
+  ticket_status=$(echo "$response" | jq -r '.status')
+  start_time=$(echo "$response" | jq -r '.start_time')
+  end_time=$(echo "$response" | jq -r '.end_time')
+  
+  if [[ "$ticket_status" != "Implement" ]]; then
+    echo "Change ticket is not in 'Implement' stage. Exiting."
+    exit 1
+  fi
+
+  # Validate if within the change window
+  current_time=$(date +%s)
+  start_epoch=$(date -d "$start_time" +%s)
+  end_epoch=$(date -d "$end_time" +%s)
+
+  if [[ $current_time -lt $start_epoch || $current_time -gt $end_epoch ]]; then
+    echo "Current time is outside change window. Exiting."
+    exit 1
+  fi
+}
+
+# Function to validate user group
+validate_user_group() {
+  response=$(curl -s -u "username:password" "$BITBUCKET_URL/rest/api/1.0/admin/groups?context=$TRIGGER_USER")
+  if ! echo "$response" | grep -q "$USER_GROUP"; then
+    echo "User $TRIGGER_USER is not part of the required group. Exiting."
+    exit 1
+  fi
+}
+
+# Function to check branch conditions
+validate_branches() {
+  if [[ "$SOURCE_BRANCH" != hotfix* && "$SOURCE_BRANCH" != release* ]]; then
+    echo "Source branch must be 'hotfix' or 'release'. Exiting."
+    exit 1
+  fi
+  if [[ "$DESTINATION_BRANCH_INPUT" != "$DESTINATION_BRANCH" ]]; then
+    echo "Destination branch must be 'master'. Exiting."
+    exit 1
+  fi
+}
+
+# Function to create a pull request
+create_pull_request() {
+  PR_RESPONSE=$(curl -s -X POST -u "username:password" -H "Content-Type: application/json" \
+    -d "{\"title\": \"PR for $CHANGE_TICKET\", \"fromRef\": {\"id\": \"$SOURCE_BRANCH\"}, \"toRef\": {\"id\": \"$DESTINATION_BRANCH\"}}" \
+    "$BITBUCKET_URL/rest/api/1.0/projects/$PROJECT_KEY/repos/$REPO_NAME/pull-requests")
+  PR_ID=$(echo "$PR_RESPONSE" | jq -r '.id')
+}
+
+# Function to approve the pull request
+approve_pull_request() {
+  curl -s -X POST -u "username:password" \
+    -H "Content-Type: application/json" \
+    -d "{\"user\": \"$APPROVER_USER\", \"status\": \"APPROVED\"}" \
+    "$BITBUCKET_URL/rest/api/1.0/projects/$PROJECT_KEY/repos/$REPO_NAME/pull-requests/$PR_ID/participants"
+}
+
+# Function to merge the pull request
+merge_pull_request() {
+  # Get the latest version
+  PR_DETAILS=$(curl -s -u "username:password" "$BITBUCKET_URL/rest/api/1.0/projects/$PROJECT_KEY/repos/$REPO_NAME/pull-requests/$PR_ID")
+  VERSION=$(echo "$PR_DETAILS" | jq -r '.version')
+  
+  curl -s -X POST -u "username:password" -H "Content-Type: application/json" \
+    -d "{\"version\": $VERSION}" \
+    "$BITBUCKET_URL/rest/api/1.0/projects/$PROJECT_KEY/repos/$REPO_NAME/pull-requests/$PR_ID/merge"
+}
+
+# Function to log details to CSV
+log_to_csv() {
+  echo "$TRIGGER_USER,$CHANGE_TICKET,$SOURCE_BRANCH,$DESTINATION_BRANCH,$CHANGE_TICKET,$ticket_status,$start_time,$end_time,merged" >> "$CSV_FILE"
+}
+
+# Function to send email notification
+send_email() {
+  SUBJECT="Deployment Completed for Change $CHANGE_TICKET"
+  BODY="Deployment details:\nUser: $TRIGGER_USER\nChange Ticket: $CHANGE_TICKET\nSource Branch: $SOURCE_BRANCH\nDestination Branch: $DESTINATION_BRANCH\nTicket Status: $ticket_status\nChange Window: $start_time to $end_time"
+  
+  echo -e "$BODY" | mail -s "$SUBJECT" "$EMAIL_LIST"
+}
+
+# Main flow
+validate_change_ticket
+validate_user_group
+validate_branches
+create_pull_request
+approve_pull_request
+merge_pull_request
+log_to_csv
+send_email
+
+echo "Deployment pipeline completed successfully."
