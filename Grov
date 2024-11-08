@@ -1,0 +1,8 @@
+// Get the ID of the user who triggered the build
+def triggerUserId = currentBuild.rawBuild.getCause(hudson.model.Cause.UserIdCause)?.getUserId()
+
+if (triggerUserId) {
+    echo "Triggered by user: ${triggerUserId}"
+} else {
+    echo "Could not retrieve the user ID."
+}
