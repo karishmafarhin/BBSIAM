@@ -1,0 +1,28 @@
+script {
+    def triggerUserId = currentBuild.rawBuild.getCause(hudson.model.Cause.UserIdCause)?.userId
+
+    if (triggerUserId) {
+        echo "Triggered by user: ${triggerUserId}"
+        
+        // Write the variable to a temporary file
+        writeFile file: 'triggerUserId.txt', text: triggerUserId
+        
+        withCredentials([usernamePassword(credentialsId: 'YOUR_CREDENTIAL_ID', usernameVariable: 'BITBUCKET_USER', passwordVariable: 'BITBUCKET_PASS')]) {
+            // Read from the file inside the shell script
+            sh """
+                #!/bin/bash
+                TRIGGER_USER_ID=$(cat triggerUserId.txt)
+
+                response=$(curl -u $BITBUCKET_USER:$BITBUCKET_PASS "https://bitbucket.example.com/rest/api/1.0/groups")
+                if ! echo "$response" | grep -q "$USER_GROUP"; then
+                    echo "User $TRIGGER_USER_ID is not part of the required group. Exiting."
+                    exit 1
+                else
+                    echo "User $TRIGGER_USER_ID is part of the required group. Proceeding."
+                fi
+            """
+        }
+    } else {
+        echo "Could not retrieve the user ID."
+    }
+}
