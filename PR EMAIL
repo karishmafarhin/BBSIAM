@@ -1,0 +1,32 @@
+stage('Send Notification Email') {
+    steps {
+        script {
+            def emailBody = """
+                <html>
+                    <body>
+                        <p>Pull Request Summary:</p>
+                        <ul>
+                            <li><strong>Triggered by:</strong> ${env.BUILD_USER_ID}</li>
+                            <li><strong>Change Ticket:</strong> ${CHANGE_TICKET}</li>
+                            <li><strong>Source Branch:</strong> ${sourceBranch}</li>
+                            <li><strong>Destination Branch:</strong> ${destinationBranch}</li>
+                            <li><strong>Change Ticket Status:</strong> Implement</li>
+                            <li><strong>Change Window:</strong> ${changeWindowStart} to ${changeWindowEnd}</li>
+                            <li><strong>Merge Status:</strong> Successful</li>
+                        </ul>
+                    </body>
+                </html>
+            """
+
+            emailext(
+                subject: "Pull Request for Change Ticket ${CHANGE_TICKET} Completed",
+                body: emailBody,
+                mimeType: 'text/html',
+                to: "${REQUESTOR_EMAIL},${DL_EMAILS}",
+                cc: "${CC_EMAILS}", // Add CC recipients here
+                replyTo: "${env.BUILD_USER_EMAIL}",
+                attachmentsPattern: 'pr_details.csv'
+            )
+        }
+    }
+}
