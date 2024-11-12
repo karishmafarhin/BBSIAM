@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+    
+    environment {
+        CSV_FILE = 'pr_merge_summary.csv'
+    }
+    
+    stages {
+        stage('CSV File Creation') {
+            steps {
+                script {
+                    // Define the variables
+                    def triggerUser = env.TRIGGER_USER
+                    def changeTicket = env.CHANGE_TICKET
+                    def sourceBranch = env.SOURCE_BRANCH
+                    def destinationBranch = env.DESTINATION_BRANCH
+                    def tagName = env.TAG_NAME
+                    def ticketStatus = env.TICKET_STATUS
+                    def changeStartTime = env.CHANGE_START_TIME
+                    def changeEndTime = env.CHANGE_END_TIME
+                    def mergeStatus = env.MERGE_STATUS
+
+                    // Run shell script to create/update CSV
+                    sh """
+                        #!/bin/bash
+                        
+                        # Check if the CSV file exists and add header if it doesn't
+                        if [ ! -f "$CSV_FILE" ]; then
+                            echo "Trigger User,Change Ticket,Source Branch,Destination Branch,Tag Name,Change Ticket Status,Change Start Time,Change End Time,Merge Status" > "$CSV_FILE"
+                        fi
+                        
+                        # Append the details to the CSV file
+                        echo "$triggerUser,$changeTicket,$sourceBranch,$destinationBranch,$tagName,$ticketStatus,$changeStartTime,$changeEndTime,$mergeStatus" >> "$CSV_FILE"
+                        
+                        echo "CSV file '$CSV_FILE' updated with merge details."
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            archiveArtifacts artifacts: 'pr_merge_summary.csv', allowEmptyArchive: true
+        }
+    }
+}
