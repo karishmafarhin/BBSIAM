@@ -1,0 +1,122 @@
+Your approach to checking the JSON response and extracting the start_date field isn't fully correct because the response structure likely has a nested result key based on ServiceNow's typical API responses. Let’s refine it for accuracy.
+
+Correct Approach:
+
+If the JSON response is stored in curlResponse, here's how to process it correctly:
+
+Key Points:
+
+1. Validate curlResponse is not empty or invalid.
+
+
+2. Parse the JSON and access nested fields (result).
+
+
+3. Handle cases where result is an empty array.
+
+
+
+Updated Script:
+
+if (curlResponse) {
+    def json = readJSON(text: curlResponse) // Parse the JSON response
+
+    // Check if 'result' exists and is not empty
+    if (json?.result && !json.result.isEmpty()) {
+        def changeTicket = json.result[0] // Assuming 'result' contains an array
+        def startDate = changeTicket?.start_date // Safely access 'start_date'
+        def endDate = changeTicket?.end_date
+        def implementerName = changeTicket?.implementer_name
+
+        // Print extracted values
+        echo "Start Date: ${startDate}"
+        echo "End Date: ${endDate}"
+        echo "Implementer Name: ${implementerName}"
+    } else {
+        error "No valid data found in the API response. The change ticket might be invalid or not exist."
+    }
+} else {
+    error "Curl response is empty or invalid. Please check the API or credentials."
+}
+
+Explanation:
+
+1. Check curlResponse:
+
+Ensures curlResponse exists and is not empty before proceeding.
+
+
+
+2. Parse JSON:
+
+def json = readJSON(text: curlResponse)
+
+Converts the JSON string into a Groovy map for easy access.
+
+
+
+3. Validate result:
+
+if (json?.result && !json.result.isEmpty())
+
+Ensures the result key exists and contains data.
+
+
+
+4. Access Nested Fields:
+
+Extract fields like start_date, end_date, and implementer_name from the first item in the result array:
+
+def changeTicket = json.result[0]
+def startDate = changeTicket?.start_date
+
+
+
+5. Error Handling:
+
+If the response or result is invalid, provide meaningful error messages using the error step.
+
+
+
+
+Expected Scenarios:
+
+1. Valid JSON Response:
+
+{
+    "result": [
+        {
+            "start_date": "2024-11-20",
+            "end_date": "2024-11-21",
+            "implementer_name": "John Doe"
+        }
+    ]
+}
+
+Output:
+
+Start Date: 2024-11-20
+End Date: 2024-11-21
+Implementer Name: John Doe
+
+
+
+2. Invalid Ticket:
+
+{ "result": [] }
+
+Error: "No valid data found in the API response. The change ticket might be invalid or not exist."
+
+
+
+3. Empty Response:
+
+curlResponse == ""
+
+Error: "Curl response is empty or invalid. Please check the API or credentials."
+
+
+
+
+Let me know if this clears things up or if further clarification is needed!
+
