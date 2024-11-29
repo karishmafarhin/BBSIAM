@@ -1,0 +1,8 @@
+def value = "Karishma, sk (7476867)"
+def matcher = value =~ /(\d+)/
+if (matcher) {
+    def id = matcher[0][1] // Extract the first group (digits inside parentheses)
+    println "Extracted ID: ${id}"
+} else {
+    println "No ID found!"
+}
