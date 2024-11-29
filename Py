@@ -1,0 +1,36 @@
+# Install Python dependencies (if not already installed)
+pip3 install --user pandas openpyxl
+
+# Create the Python script
+cat << 'EOF' > generate_team_roles.py
+import pandas as pd
+
+# Input and output file paths
+file_path = "your_file.xlsx"
+output_file = "output.xlsx"
+
+# Load Excel file
+df = pd.read_excel(file_path)
+
+# Extract the lists of teams and roles
+teams = df["Teams"].dropna().tolist()
+roles = df["Roles"].dropna().tolist()
+
+# Generate the formatted combinations
+result = [f"{team} | {role}" for team in teams for role in roles]
+
+# Save the result to a new Excel file
+output_df = pd.DataFrame(result, columns=["Team | Role"])
+output_df.to_excel(output_file, index=False)
+
+print(f"Output saved to {output_file}")
+EOF
+
+# Ensure the input Excel file exists
+if [ ! -f "your_file.xlsx" ]; then
+    echo "Error: Input file your_file.xlsx not found!" >&2
+    exit 1
+fi
+
+# Execute the Python script
+python3 generate_team_roles.py
