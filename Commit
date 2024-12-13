@@ -80,3 +80,14 @@ If the tag's commit matches any of the hotfix branches, the tag is determined to
 
 
 
+SOURCE_BRANCH=$(curl -s -u username:password \
+"https://bitbucket.org/rest/api/1.0/projects/{projectKey}/repos/{repoSlug}/branches?details=true" | \
+jq -r ".values[] | select(.latestCommit==\"${TAG_COMMIT}\") | .id")
+
+if [[ "$SOURCE_BRANCH" =~ ^hotfix.* ]]; then
+    echo "The tag was created from a hotfix branch: $SOURCE_BRANCH"
+elif [[ "$SOURCE_BRANCH" =~ ^release.* ]]; then
+    echo "The tag was created from a release branch: $SOURCE_BRANCH"
+else
+    echo "The tag was not created from a hotfix or release branch."
+fi
