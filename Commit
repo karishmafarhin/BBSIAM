@@ -1,0 +1,82 @@
+If your hotfix branches can have varying patterns like hotfix/fix, hotfix-123, etc., you need to filter branches dynamically based on a common prefix such as hotfix.
+
+Here’s how you can update the process:
+
+Dynamic Branch Filtering for Hotfix
+
+1. Fetch All Hotfix Branches: Use the filterText parameter to fetch all branches that start with hotfix.
+
+curl -u username:password -X GET "https://<bitbucket-url>/rest/api/1.0/projects/<project-key>/repos/<repo-name>/branches?filterText=hotfix"
+
+
+2. Compare Against All Hotfix Commits: Extract the latestCommit from each hotfix branch and compare it with the commit ID of the tag.
+
+
+
+Updated Shell Script
+
+#!/bin/bash
+
+# Variables
+BITBUCKET_URL="https://<bitbucket-url>"
+PROJECT_KEY="<project-key>"
+REPO_NAME="<repo-name>"
+TAG_NAME="<tag-name>"
+USERNAME="<username>"
+PASSWORD="<password>"
+
+# Fetch commit ID of the tag
+TAG_COMMIT=$(curl -su $USERNAME:$PASSWORD -X GET "$BITBUCKET_URL/rest/api/1.0/projects/$PROJECT_KEY/repos/$REPO_NAME/tags/$TAG_NAME" | jq -r '.latestCommit')
+
+# Fetch all hotfix branches
+HOTFIX_COMMITS=$(curl -su $USERNAME:$PASSWORD -X GET "$BITBUCKET_URL/rest/api/1.0/projects/$PROJECT_KEY/repos/$REPO_NAME/branches?filterText=hotfix" | jq -r '.values[].latestCommit')
+
+# Fetch release branch commit
+RELEASE_COMMIT=$(curl -su $USERNAME:$PASSWORD -X GET "$BITBUCKET_URL/rest/api/1.0/projects/$PROJECT_KEY/repos/$REPO_NAME/branches?filterText=release" | jq -r '.values[0].latestCommit')
+
+# Compare tag commit with hotfix branches
+HOTFIX_MATCH=false
+for commit in $HOTFIX_COMMITS; do
+  if [[ "$TAG_COMMIT" == "$commit" ]]; then
+    HOTFIX_MATCH=true
+    break
+  fi
+done
+
+# Determine the branch source
+if $HOTFIX_MATCH; then
+  echo "The tag was created from a hotfix branch."
+elif [[ "$TAG_COMMIT" == "$RELEASE_COMMIT" ]]; then
+  echo "The tag was created from the release branch."
+else
+  echo "The tag was not created from hotfix or release branches."
+fi
+
+Explanation:
+
+1. Filter Hotfix Branches Dynamically:
+
+The script fetches all branches that start with hotfix using filterText=hotfix.
+
+Each branch's latestCommit is checked against the tag's commit.
+
+
+
+2. Support for Variable Hotfix Patterns:
+
+The script dynamically identifies any branch that starts with hotfix regardless of the specific naming pattern.
+
+
+
+3. Validation Against Release Branch:
+
+The release branch is fetched separately and compared similarly.
+
+
+
+4. Comparison Logic:
+
+If the tag's commit matches any of the hotfix branches, the tag is determined to originate from a hotfix branch.
+
+
+
