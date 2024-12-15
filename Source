@@ -1,0 +1,16 @@
+SOURCE_BRANCH=$(curl -s -u username:password \
+"https://bitbucket.org/rest/api/1.0/projects/{projectKey}/repos/{repoSlug}/branches?details=true" | \
+jq -r --arg TAG_COMMIT "$TAG_COMMIT" '
+  .values[] | select(.metadata.parentCommits[]? == $TAG_COMMIT or .latestCommit == $TAG_COMMIT) | .id')
+
+if [[ -n "$SOURCE_BRANCH" ]]; then
+    if [[ "$SOURCE_BRANCH" =~ ^hotfix.* ]]; then
+        echo "The tag was created from a hotfix branch: $SOURCE_BRANCH"
+    elif [[ "$SOURCE_BRANCH" =~ ^release.* ]]; then
+        echo "The tag was created from a release branch: $SOURCE_BRANCH"
+    else
+        echo "The tag was created from another branch: $SOURCE_BRANCH"
+    fi
+else
+    echo "The commit $TAG_COMMIT is not associated with any branch."
+fi
