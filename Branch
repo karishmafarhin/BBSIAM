@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Input Variables
+USERNAME="your-username"
+PASSWORD="your-password"
+BASE_URL="https://bitbucket.example.com"
+PROJECT_KEY="APP"
+REPO_SLUG="app-repo"
+COMMIT_ID="your-commit-id"
+
+# Step 1: Fetch all branches
+BRANCHES=$(curl -s -u "$USERNAME:$PASSWORD" \
+  "$BASE_URL/rest/api/1.0/projects/$PROJECT_KEY/repos/$REPO_SLUG/branches" | jq -r '.values[].displayId')
+
+# Step 2: Check each branch for the commit
+for BRANCH in $BRANCHES; do
+  # Use the commits API to check if the commit exists in the branch
+  RESPONSE=$(curl -s -u "$USERNAME:$PASSWORD" \
+    "$BASE_URL/rest/api/1.0/projects/$PROJECT_KEY/repos/$REPO_SLUG/commits?until=$BRANCH&limit=1000" | jq -r ".values[].id")
+
+  if echo "$RESPONSE" | grep -q "$COMMIT_ID"; then
+    if [[ $BRANCH == hotfix* || $BRANCH == release/release ]]; then
+      echo "Commit $COMMIT_ID found in branch: $BRANCH"
+    fi
+  fi
+done
