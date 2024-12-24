@@ -1,0 +1,10 @@
+#!/bin/bash
+
+input="" # Example input
+value=$(echo "$input" | grep -oP '\K[^]*')
+
+if [ -n "$value" ]; then
+  echo "Value inside parentheses: $value"
+else
+  echo "No value found inside parentheses."
+fi
