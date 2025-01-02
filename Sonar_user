@@ -1,0 +1,19 @@
+This attribute, scmAccount, is used in SonarQube to associate a user with one or more SCM (Source Control Management) accounts.
+
+Purpose: It links a SonarQube user to their corresponding SCM accounts, allowing SonarQube to track activity or correlate commits with the user.
+
+How to use: If a user has multiple SCM accounts, you need to call the scmAccount parameter multiple times—once for each account.
+
+Example:
+
+scmAccount=firstValue
+scmAccount=secondValue
+scmAccount=thirdValue
+
+In a URL or query string, this would be formatted like:
+
+scmAccount=firstValue&scmAccount=secondValue&scmAccount=thirdValue
+
+
+This is particularly useful when the same user has multiple SCM identities, e.g., Git, SVN, or other supported SCM tools, ensuring proper mapping across systems.
+
