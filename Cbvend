@@ -1,0 +1,43 @@
+
+
+Subject: Assistance Required: Granting Access to Modify Pipelines Using Specific Credentials in CloudBees CD
+
+Description:
+We are facing an access issue in CloudBees CD related to credentials and their usage in pipelines.
+
+Background:
+
+1. Credentials were created using a specific user account and attached to a project in CloudBees CD.
+
+
+2. These credentials are being used in pipelines and DSL scripts.
+
+
+3. We observed that only the user account that created the credentials has the ability to modify pipelines where these credentials are applied.
+
+
+4. Other users, even with appropriate project or pipeline permissions, are unable to edit these pipelines due to the restrictions tied to credential ownership.
+
+
+
+Requirement:
+We need guidance on how to:
+
+Grant edit access to other users for pipelines using these credentials.
+
+Update permissions for existing credentials to allow broader team collaboration without recreating them.
+
+Ensure that this process aligns with best practices for security and credential management.
+
+
+Please let us know the steps or process to resolve this issue.
+
+Environment Details:
+
+CloudBees CD Version: [Provide version details]
+
+Project and Pipeline Details: [Optional, if required]
+
+
+Looking forward to your assistance.
+
