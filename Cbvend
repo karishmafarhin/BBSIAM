@@ -1,5 +1,27 @@
 
 
+Subject: Password Rotation Update for CDevops-uDeploy Account
+
+Dear Team,
+
+We have completed the password rotation activity for the account CDevops-uDeploy in the PROD environment. As part of this process:
+
+1. The password has been updated in all planned releases in CloudBees CD for self-service deployments.
+
+
+2. The script templates have also been updated to include the new credentials, ensuring that any newly created release will automatically incorporate these updated credentials in the release DSL.
+
+
+
+Validation has been performed thoroughly. However, if you encounter any issues during deployments related to this password rotation, please notify me immediately.
+
+
+
+---
+
+Let me know if you need further changes!
+
+
 Subject: Assistance Required: Granting Access to Modify Pipelines Using Specific Credentials in CloudBees CD
 
 Description:
