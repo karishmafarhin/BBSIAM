@@ -1,0 +1,23 @@
+Subject: Upcoming Cleanup of Older Projects on Sonar (Dev & Prod)
+
+Hello [Team],
+
+I hope you’re doing well. As part of our ongoing efforts to optimize our Sonar environments and maintain an efficient code analysis process, we will be cleaning up older projects on both the Development and Production instances.
+
+Key details:
+
+Sonar Dev: Any project older than 6 months will be removed.
+
+Sonar Prod: Any project older than 1 year will be removed.
+
+
+This cleanup is intended to help us recover unused lines of code and ensure our Sonar systems remain manageable and efficient. If you have any critical projects or branches in Sonar that meet these criteria but still need to be retained, please reach out before [deadline date] so we can make the necessary exceptions.
+
+If you have any questions or concerns, feel free to contact me or the Sonar support team.
+
+Thank you for your cooperation and understanding.
+
+Best regards,
+
+[Your Name] [Your Title / Role] [Company / Organization] [Contact Information]
+
