@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Configuration
+BITBUCKET_URL="https://your-bitbucket-instance.com"
+PROJECT_KEY="YOUR_PROJECT"
+REPO_SLUG="YOUR_REPO"
+AUTH_TOKEN="your-auth-token"
+CSV_FILE="reviewers_report_$(date +%Y%m%d_%H%M%S).csv"
+
+# API endpoint
+API_ENDPOINT="${BITBUCKET_URL}/rest/default-reviewers/1.0/projects/${PROJECT_KEY}/repos/${REPO_SLUG}/conditions"
+
+# Get default reviewers data
+response=$(curl -s -X GET \
+    -H "Authorization: Bearer ${AUTH_TOKEN}" \
+    -H "Content-Type: application/json" \
+    "${API_ENDPOINT}")
+
+# Check for empty response
+if [ -z "$response" ] || [ "$response" = "[]" ]; then
+    echo "No default reviewers configurations found for this project."
+    exit 0
+fi
+
+# Validate JSON response
+if ! jq -e . >/dev/null 2>&1 <<<"$response"; then
+    echo "Invalid JSON response:"
+    echo "$response"
+    exit 1
+fi
+
+# Create CSV header
+echo "ID,Source Matcher,Destination Matcher,Reviewers,Reviewer Count" > "$CSV_FILE"
+
+# Process each ID and generate CSV
+echo "$response" | jq -r '
+    .[] | 
+    [
+        .id,
+        .sourceMatcher.name,
+        .targetMatcher.name,
+        (.reviewers | map(.name) | join("; ") // "None"),
+        (.reviewers | length)
+    ] | @csv' >> "$CSV_FILE"
+
+echo "Report generated: $CSV_FILE"
+echo "Total configurations processed: $(wc -l < "$CSV_FILE" | awk '{print $1-1}')"
