@@ -1,0 +1,3 @@
+SELECT constraint_name, table_name
+FROM user_constraints
+WHERE index_name = 'VC_LVE_PATH_COMMIT_REC';
