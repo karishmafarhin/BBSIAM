@@ -1,0 +1,27 @@
+def call(String env = 'dev') {
+    def envConfig = [
+        dev  : [ url: 'https://nexus-dev.example.com', credId: 'nexus-dev-creds', agent: 'dev-agent' ],
+        stage: [ url: 'https://nexus-stage.example.com', credId: 'nexus-stage-creds', agent: 'stage-agent' ],
+        prod : [ url: 'https://nexus.example.com', credId: 'nexus-prod-creds', agent: 'prod-agent' ]
+    ]
+
+    def cfg = envConfig[env]
+    if (!cfg) {
+        error "❌ Unknown environment: ${env}"
+    }
+
+    node(cfg.agent) {
+        stage("Generate Nexus Support Bundle for ${env}") {
+            withCredentials([usernamePassword(credentialsId: cfg.credId, usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                // Copy or extract shell script (if from resources)
+                def scriptName = 'generate_nexus_bundle.sh'
+                def scriptContent = libraryResource(scriptName)
+                writeFile file: scriptName, text: scriptContent
+                sh "chmod +x ${scriptName}"
+
+                // Execute the shell script
+                sh "./${scriptName} '${cfg.url}' '${NEXUS_USER}' '${NEXUS_PASS}' '${env}'"
+            }
+        }
+    }
+}
