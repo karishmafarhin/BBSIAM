@@ -1,0 +1,56 @@
+@Library('your-shared-lib') _
+
+pipeline {
+    agent none
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'stage', 'prod'], description: 'Choose Environment')
+    }
+
+    environment {
+        // You can set defaults or override later dynamically
+        NEXUS_URL = ''
+        CREDENTIALS_ID = ''
+        AGENT_LABEL = ''
+    }
+
+    stages {
+        stage('Configure Environment') {
+            steps {
+                script {
+                    switch (params.ENVIRONMENT) {
+                        case 'dev':
+                            env.NEXUS_URL = 'https://nexus-dev.example.com'
+                            env.CREDENTIALS_ID = 'nexus-dev-creds'
+                            env.AGENT_LABEL = 'dev-agent'
+                            break
+                        case 'stage':
+                            env.NEXUS_URL = 'https://nexus-stage.example.com'
+                            env.CREDENTIALS_ID = 'nexus-stage-creds'
+                            env.AGENT_LABEL = 'stage-agent'
+                            break
+                        case 'prod':
+                            env.NEXUS_URL = 'https://nexus.example.com'
+                            env.CREDENTIALS_ID = 'nexus-prod-creds'
+                            env.AGENT_LABEL = 'prod-agent'
+                            break
+                        default:
+                            error "Unknown environment selected: ${params.ENVIRONMENT}"
+                    }
+                }
+            }
+        }
+
+        stage('Generate Support Bundle') {
+            agent { label "${env.AGENT_LABEL}" }
+            steps {
+                script {
+                    generateNexusSupportBundle(
+                        env.NEXUS_URL,
+                        env.CREDENTIALS_ID,
+                        params.ENVIRONMENT
+                    )
+                }
+            }
+        }
+    }
+}
