@@ -1,0 +1,5 @@
+environment {
+    NEXUS_URL     = "${params.ENVIRONMENT == 'dev' ? 'https://nexus-dev.example.com' : 'https://nexus-prod.example.com'}"
+    CREDENTIALS_ID = "${params.ENVIRONMENT == 'dev' ? 'nexus-dev-creds' : 'nexus-prod-creds'}"
+    AGENT_LABEL    = "${params.ENVIRONMENT == 'dev' ? 'dev-agent' : 'prod-agent'}"
+}
